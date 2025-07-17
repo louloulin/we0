@@ -4,6 +4,8 @@ import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { weatherWorkflow } from './workflows/weather-workflow';
 import { deepseekCodeGenerationWorkflow } from './workflows/deepseek-workflow';
+import { builderWorkflow } from './workflows/builder-workflow';
+import { chatWorkflow } from './workflows/chat-workflow';
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
 
@@ -45,6 +47,8 @@ export const mastra = new Mastra({
   workflows: {
     weatherWorkflow,
     deepseekCodeGenerationWorkflow,
+    builderWorkflow,
+    chatWorkflow,
   },
   agents: {
     weatherAgent,

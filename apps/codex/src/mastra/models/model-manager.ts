@@ -100,6 +100,11 @@ export class ModelManager {
     }
 
     if (!config.apiKey) {
+      // In development/testing, return a mock model instead of throwing
+      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+        console.warn(`⚠️  API key not configured for model ${modelKey}, using mock model`);
+        return this.createMockModel(config);
+      }
       throw new Error(`API key not configured for model ${modelKey}`);
     }
 
@@ -113,6 +118,29 @@ export class ModelManager {
       default:
         throw new Error(`Unsupported provider: ${config.provider}`);
     }
+  }
+
+  /**
+   * Create a mock model for testing/development
+   */
+  private createMockModel(config: ModelConfig): LanguageModel {
+    // Create a mock model that implements the LanguageModel interface
+    return {
+      modelId: `mock-${config.modelKey}`,
+      provider: config.provider,
+      // Mock implementation that returns a simple response
+      doGenerate: async () => ({
+        text: 'This is a mock response for testing purposes.',
+        finishReason: 'stop' as const,
+        usage: { promptTokens: 10, completionTokens: 20 }
+      }),
+      doStream: async function* () {
+        yield {
+          type: 'text-delta' as const,
+          textDelta: 'Mock streaming response'
+        };
+      }
+    } as any; // Type assertion for mock
   }
 
   /**
