@@ -25,7 +25,7 @@ export const parseArtifactTool = new Tool({
     hasFiles: z.boolean().describe('Whether any files were found'),
     fileCount: z.number().describe('Number of files extracted'),
   }),
-  execute: async ({ content }) => {
+  execute: async ({ context: { content } }) => {
     const parsed = parseMessage(content);
     
     return {
@@ -57,7 +57,7 @@ export const processMessagesTool = new Tool({
     totalSize: z.number().describe('Total size of all file content in bytes'),
     projectType: z.enum(['miniProgram', 'web', 'backend', 'other']).optional().describe('Detected project type'),
   }),
-  execute: async ({ messages, clearText }) => {
+  execute: async ({ context: { messages, clearText } }) => {
     const processed = processFiles(messages as Message[], clearText);
     
     return {
@@ -90,7 +90,7 @@ export const analyzeFileStructureTool = new Tool({
     }).describe('Information about the largest file'),
     recommendations: z.array(z.string()).describe('Recommendations based on file structure'),
   }),
-  execute: async ({ files }) => {
+  execute: async ({ context: { files } }) => {
     const { determineProjectType, getFileStatistics } = await import('../utils/file-processor');
     
     const projectType = determineProjectType(files);
@@ -154,7 +154,7 @@ export const filterFilesTool = new Tool({
     filteredCount: z.number().describe('Filtered file count'),
     removedCount: z.number().describe('Number of files removed'),
   }),
-  execute: async ({ files, extensions, includePatterns, excludePatterns, codeOnly }) => {
+  execute: async ({ context: { files, extensions, includePatterns, excludePatterns, codeOnly } }) => {
     const { filterFiles } = await import('../utils/file-processor');
     
     const filteredFiles = filterFiles(files, {
@@ -189,7 +189,7 @@ export const validateFilesTool = new Tool({
     fileCount: z.number().describe('Number of files validated'),
     summary: z.string().describe('Validation summary'),
   }),
-  execute: async ({ files }) => {
+  execute: async ({ context: { files } }) => {
     const { validateFiles } = await import('../utils/file-processor');
     
     const validation = validateFiles(files);
@@ -230,15 +230,15 @@ export const summarizeFilesTool = new Tool({
     overallSummary: z.string().describe('Overall project summary'),
     keyFiles: z.array(z.string()).describe('List of key/important files'),
   }),
-  execute: async ({ files, maxSummaryLength }) => {
+  execute: async ({ context: { files, maxSummaryLength } }) => {
     const { estimateFileComplexity, isCodeFile } = await import('../utils/message-parser');
     
     const summaries: Record<string, string> = {};
     const keyFiles: string[] = [];
     
     for (const [filePath, content] of Object.entries(files)) {
-      const lines = content.split('\n').length;
-      const complexity = estimateFileComplexity(content);
+      const lines = (content as string).split('\n').length;
+      const complexity = estimateFileComplexity(content as string);
       const isCode = isCodeFile(filePath);
       
       let summary = `${isCode ? 'Code file' : 'Text file'} with ${lines} lines`;
@@ -253,8 +253,8 @@ export const summarizeFilesTool = new Tool({
       }
       
       // Add content preview
-      const preview = content.substring(0, maxSummaryLength - summary.length - 10);
-      if (preview.length < content.length) {
+      const preview = (content as string).substring(0, maxSummaryLength - summary.length - 10);
+      if (preview.length < (content as string).length) {
         summary += `. Preview: ${preview}...`;
       } else {
         summary += `. Content: ${preview}`;
