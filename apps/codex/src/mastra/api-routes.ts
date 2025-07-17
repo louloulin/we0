@@ -7,6 +7,57 @@
 import { registerApiRoute } from '@mastra/core/server';
 import { z } from 'zod';
 
+// 将Mastra stream转换为AI SDK兼容的stream
+function convertMastraStreamToAISDK(mastraStream: any) {
+  const encoder = new TextEncoder();
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        // AI SDK数据流协议：发送初始空字符串
+        const startData = `0:""\n`;
+        controller.enqueue(encoder.encode(startData));
+
+        let accumulatedText = '';
+
+        // 处理Mastra的textStream
+        for await (const chunk of mastraStream.textStream) {
+          accumulatedText += chunk;
+
+          // AI SDK格式：文本块使用 0: 前缀
+          const escapedChunk = chunk.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+          const chunkData = `0:"${escapedChunk}"\n`;
+          controller.enqueue(encoder.encode(chunkData));
+        }
+
+        // 发送完成标记
+        const finishData = `d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":0}}\n`;
+        controller.enqueue(encoder.encode(finishData));
+
+        controller.close();
+      } catch (error) {
+        console.error('Stream conversion error:', error);
+        // 发送错误信息
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorData = `3:${JSON.stringify({ error: errorMessage })}\n`;
+        controller.enqueue(encoder.encode(errorData));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 // Chat API Route
 const ChatRequestSchema = z.object({
   messages: z.array(z.object({
@@ -273,7 +324,7 @@ async function handleChatMode(
   }));
 
   if (isStreaming) {
-    // Use Mastra's native streaming with proper SSE format
+    // Use Mastra's native streaming and convert to AI SDK format
     const stream = await chatAgent.stream(mastraMessages, {
       memory: {
         resource: userId || 'anonymous',
@@ -285,52 +336,8 @@ async function handleChatMode(
       },
     });
 
-    // Set up SSE headers
-    c.header('Content-Type', 'text/event-stream');
-    c.header('Cache-Control', 'no-cache');
-    c.header('Connection', 'keep-alive');
-    c.header('Access-Control-Allow-Origin', '*');
-
-    // Create a readable stream for SSE
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
-        try {
-          // Send initial event
-          controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
-
-          // Stream the text chunks
-          for await (const chunk of stream.textStream) {
-            const data = JSON.stringify({
-              type: 'content',
-              content: chunk,
-            });
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          }
-
-          // Send completion event
-          controller.enqueue(encoder.encode('data: {"type":"done"}\n\n'));
-          controller.close();
-        } catch (error) {
-          console.error('Streaming error:', error);
-          const errorData = JSON.stringify({
-            type: 'error',
-            error: error instanceof Error ? error.message : String(error),
-          });
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    // Convert Mastra stream to AI SDK compatible format
+    return convertMastraStreamToAISDK(stream);
   } else {
     // Non-streaming response
     const result = await chatAgent.generate(mastraMessages, {
@@ -393,52 +400,8 @@ async function handleBuilderMode(
       },
     });
 
-    // Set up SSE headers
-    c.header('Content-Type', 'text/event-stream');
-    c.header('Cache-Control', 'no-cache');
-    c.header('Connection', 'keep-alive');
-    c.header('Access-Control-Allow-Origin', '*');
-
-    // Create a readable stream for SSE
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
-        try {
-          // Send initial event
-          controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
-
-          // Stream the text chunks
-          for await (const chunk of stream.textStream) {
-            const data = JSON.stringify({
-              type: 'content',
-              content: chunk,
-            });
-            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-          }
-
-          // Send completion event
-          controller.enqueue(encoder.encode('data: {"type":"done"}\n\n'));
-          controller.close();
-        } catch (error) {
-          console.error('Builder streaming error:', error);
-          const errorData = JSON.stringify({
-            type: 'error',
-            error: error instanceof Error ? error.message : String(error),
-          });
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    // Convert Mastra stream to AI SDK compatible format
+    return convertMastraStreamToAISDK(stream);
   } else {
     // Non-streaming response
     const result = await builderAgent.generate(mastraMessages, {
