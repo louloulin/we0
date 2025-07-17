@@ -6,14 +6,26 @@ import { weatherWorkflow } from './workflows/weather-workflow';
 import { deepseekCodeGenerationWorkflow } from './workflows/deepseek-workflow';
 import { builderWorkflow } from './workflows/builder-workflow';
 import { chatWorkflow } from './workflows/chat-workflow';
+import { apiOptimizationWorkflow } from './workflows/api-optimization-workflow';
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
 
 // Import API routes
-import { chatRoute } from './routes/chat';
-import { modelRoute } from './routes/model';
-import { deployRoute } from './routes/deploy';
-import { enhancedPromptRoute } from './routes/enhanced-prompt';
+import {
+  chatApiRoute,
+  modelApiRoute,
+  deployApiRoute,
+  enhancedPromptApiRoute
+} from './api-routes';
+import { registerApiRoute } from '@mastra/core/server';
+
+// Import services and configuration
+import { productionConfig, logConfigurationStatus } from './config/production';
+import { createMiddlewareStack } from './middleware';
+import { fileProcessor } from './services/file-processor';
+import { deploymentService } from './services/deployment-service';
+import { cacheService } from './services/cache-service';
+import { performanceService } from './services/performance-service';
 
 // Import tools for direct access
 import {
@@ -49,6 +61,7 @@ export const mastra = new Mastra({
     deepseekCodeGenerationWorkflow,
     builderWorkflow,
     chatWorkflow,
+    apiOptimizationWorkflow,
   },
   agents: {
     weatherAgent,
@@ -78,14 +91,133 @@ export const mastra = new Mastra({
       allowHeaders: ['Content-Type', 'Authorization', 'userId'],
       credentials: false,
     },
+    middleware: [
+      // Performance monitoring middleware
+      async (c, next) => {
+        const startTime = Date.now();
+        const url = new URL(c.req.url);
+        const endpoint = url.pathname;
+        const method = c.req.method;
+
+        try {
+          await next();
+          const responseTime = Date.now() - startTime;
+
+          // Record request metrics
+          performanceService.recordRequest({
+            endpoint,
+            method,
+            statusCode: c.res.status,
+            responseTime,
+            userId: c.req.header('userId') || undefined,
+            model: c.req.header('X-Model') || undefined,
+            cached: c.res.headers.get('X-Cache-Hit') === 'true',
+          });
+        } catch (error) {
+          const responseTime = Date.now() - startTime;
+
+          // Record error metrics
+          performanceService.recordRequest({
+            endpoint,
+            method,
+            statusCode: 500,
+            responseTime,
+            userId: c.req.header('userId') || undefined,
+            model: c.req.header('X-Model') || undefined,
+            cached: false,
+          });
+
+          throw error;
+        }
+      },
+    ],
     apiRoutes: [
-      chatRoute,
-      modelRoute,
-      deployRoute,
-      enhancedPromptRoute,
+      // Test route
+      registerApiRoute('/test', {
+        method: 'GET',
+        handler: async (c) => {
+          return c.json({ message: 'Test route working!' });
+        },
+      }),
+      // Health check route
+      registerApiRoute('/health', {
+        method: 'GET',
+        handler: async (c) => {
+          const health = {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            environment: process.env.NODE_ENV || 'development',
+            version: process.env.npm_package_version || '1.0.0',
+            services: {
+              fileProcessor: 'available',
+              deploymentService: 'available',
+              modelManager: 'available',
+            },
+          };
+          return c.json(health);
+        },
+      }),
+      // File processing status route
+      registerApiRoute('/files/status', {
+        method: 'GET',
+        handler: async (c) => {
+          const stats = {
+            supportedExtensions: fileProcessor.getSupportedExtensions(),
+            maxFileSize: '10MB',
+            maxTotalSize: '50MB',
+            supportedLanguages: ['javascript', 'typescript', 'python', 'java', 'cpp', 'go', 'rust', 'html', 'css'],
+          };
+          return c.json(stats);
+        },
+      }),
+      // Deployment status route
+      registerApiRoute('/deploy/status', {
+        method: 'GET',
+        handler: async (c) => {
+          const stats = deploymentService.getDeploymentStats();
+          const platforms = deploymentService.getSupportedPlatforms();
+          return c.json({ ...stats, supportedPlatforms: platforms });
+        },
+      }),
+      // Cache status route
+      registerApiRoute('/cache/status', {
+        method: 'GET',
+        handler: async (c) => {
+          const status = cacheService.getStatus();
+          return c.json(status);
+        },
+      }),
+      // Performance metrics route
+      registerApiRoute('/metrics', {
+        method: 'GET',
+        handler: async (c) => {
+          const timeRange = c.req.query('timeRange');
+          const range = timeRange ? parseInt(timeRange) : undefined;
+          const stats = performanceService.getStats(range);
+          return c.json(stats);
+        },
+      }),
+      // All we-dev-next compatible API routes
+      chatApiRoute,
+      modelApiRoute,
+      deployApiRoute,
+      enhancedPromptApiRoute,
     ],
   },
 });
+
+// Log configuration status on startup
+if (process.env.NODE_ENV !== 'test') {
+  logConfigurationStatus();
+
+  console.log('\n🚀 Mastra Instance Created:');
+  console.log(`   Workflows: ${Object.keys(mastra.getWorkflows()).length} registered`);
+  console.log(`   Tools: Available and configured`);
+  console.log(`   Agents: Available and configured`);
+  console.log(`   API Routes: Available at http://localhost:${productionConfig.server.port}`);
+}
 
 // Make Mastra instance globally available for API routes
 declare global {

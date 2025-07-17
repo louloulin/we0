@@ -7,7 +7,7 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 
 // Test configuration
-const API_BASE_URL = 'http://localhost:4111/api';
+const API_BASE_URL = 'http://localhost:4111';
 const TEST_TIMEOUT = 30000;
 
 describe('API Routes Compatibility Tests', () => {

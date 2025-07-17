@@ -47,10 +47,24 @@ export const DEEPSEEK_MODELS = {
   // DeepSeek Chat models
   CHAT: 'deepseek-chat',
   CODER: 'deepseek-coder',
-  
+
+  // DeepSeek Reasoning models
+  REASONER: 'deepseek-reasoner',
+
+  // DeepSeek R1 models (latest reasoning models)
+  R1: 'deepseek-r1',
+  R1_DISTILL_LLAMA_70B: 'deepseek-r1-distill-llama-70b',
+  R1_DISTILL_QWEN_32B: 'deepseek-r1-distill-qwen-32b',
+  R1_DISTILL_QWEN_14B: 'deepseek-r1-distill-qwen-14b',
+  R1_DISTILL_QWEN_7B: 'deepseek-r1-distill-qwen-7b',
+  R1_DISTILL_QWEN_1_5B: 'deepseek-r1-distill-qwen-1.5b',
+
   // Specific model versions (if needed)
   CHAT_V2: 'deepseek-chat-v2',
   CODER_V2: 'deepseek-coder-v2',
+
+  // DeepSeek V3 models (latest generation)
+  V3: 'deepseek-v3',
 } as const;
 
 // Helper function to create DeepSeek model instances
@@ -61,6 +75,16 @@ export const createDeepSeekModel = (model: string = DEEPSEEK_MODELS.CHAT) => {
 // Convenience exports for common models
 export const deepseekChat = () => createDeepSeekModel(DEEPSEEK_MODELS.CHAT);
 export const deepseekCoder = () => createDeepSeekModel(DEEPSEEK_MODELS.CODER);
+export const deepseekReasoner = () => createDeepSeekModel(DEEPSEEK_MODELS.REASONER);
+export const deepseekR1 = () => createDeepSeekModel(DEEPSEEK_MODELS.R1);
+export const deepseekV3 = () => createDeepSeekModel(DEEPSEEK_MODELS.V3);
+
+// Convenience exports for R1 distilled models
+export const deepseekR1Llama70B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_LLAMA_70B);
+export const deepseekR1Qwen32B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_32B);
+export const deepseekR1Qwen14B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_14B);
+export const deepseekR1Qwen7B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_7B);
+export const deepseekR1Qwen1_5B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_1_5B);
 
 /**
  * Model-specific configurations with parameter support
@@ -112,8 +136,17 @@ export const DEEPSEEK_CONFIG = {
   maxTokens: {
     [DEEPSEEK_MODELS.CHAT]: 32768,      // DeepSeek Chat supports 32K context
     [DEEPSEEK_MODELS.CODER]: 16384,     // DeepSeek Coder supports 16K context
+    [DEEPSEEK_MODELS.REASONER]: 64000,  // DeepSeek Reasoner supports 64K context
+    [DEEPSEEK_MODELS.R1]: 128000,       // DeepSeek R1 supports 128K context
+    [DEEPSEEK_MODELS.V3]: 128000,       // DeepSeek V3 supports 128K context
     [DEEPSEEK_MODELS.CHAT_V2]: 32768,   // V2 models maintain same context
     [DEEPSEEK_MODELS.CODER_V2]: 16384,
+    // R1 distilled models have varying context lengths
+    [DEEPSEEK_MODELS.R1_DISTILL_LLAMA_70B]: 32768,
+    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_32B]: 32768,
+    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_14B]: 32768,
+    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_7B]: 32768,
+    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_1_5B]: 32768,
   },
 
   // Recommended default parameters for optimal performance
@@ -148,6 +181,24 @@ export const DEEPSEEK_CONFIG = {
       'Code review and analysis',
       'Debugging assistance',
       'Technical documentation'
+    ],
+    [DEEPSEEK_MODELS.REASONER]: [
+      'Complex reasoning tasks',
+      'Mathematical problem solving',
+      'Logical analysis',
+      'Multi-step reasoning'
+    ],
+    [DEEPSEEK_MODELS.R1]: [
+      'Advanced reasoning',
+      'Research assistance',
+      'Complex problem solving',
+      'Chain-of-thought reasoning'
+    ],
+    [DEEPSEEK_MODELS.V3]: [
+      'Latest generation tasks',
+      'High-performance reasoning',
+      'Advanced code generation',
+      'Complex analysis'
     ],
   },
 } as const;
