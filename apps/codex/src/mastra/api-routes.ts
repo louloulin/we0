@@ -80,25 +80,7 @@ export const modelApiRoute = registerApiRoute('/apix/model', {
   method: 'POST',
   handler: async (c) => {
     const modelConfigs = [
-      {
-        label: "Claude 3.5 Sonnet",
-        value: "claude-3-5-sonnet-20241022",
-        useImage: true,
-        description: "Anthropic's most capable model with vision support",
-        icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/anthropic/anthropic-original.svg",
-        provider: "anthropic",
-        functionCall: true,
-      },
-      {
-        label: "GPT-4o Mini",
-        value: "gpt-4o-mini",
-        useImage: true,
-        description: "OpenAI's efficient model with vision support",
-        icon: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/openai/openai-original.svg",
-        provider: "openai",
-        functionCall: true,
-      },
-      {
+          {
         label: "DeepSeek Reasoner",
         value: "deepseek-reasoner",
         useImage: false,
@@ -117,15 +99,6 @@ export const modelApiRoute = registerApiRoute('/apix/model', {
         functionCall: true,
       },
       {
-        label: "DeepSeek R1",
-        value: "deepseek-r1",
-        useImage: false,
-        description: "DeepSeek's latest reasoning model with 128K context",
-        icon: "https://files.deepseek.com/api/file/deepseek-logo.svg",
-        provider: "deepseek",
-        functionCall: true,
-      },
-      {
         label: "DeepSeek V3",
         value: "deepseek-v3",
         useImage: false,
@@ -133,16 +106,7 @@ export const modelApiRoute = registerApiRoute('/apix/model', {
         icon: "https://files.deepseek.com/api/file/deepseek-logo.svg",
         provider: "deepseek",
         functionCall: true,
-      },
-      {
-        label: "DeepSeek Coder",
-        value: "deepseek-coder",
-        useImage: false,
-        description: "DeepSeek's specialized coding model",
-        icon: "https://files.deepseek.com/api/file/deepseek-logo.svg",
-        provider: "deepseek",
-        functionCall: true,
-      },
+      }
     ];
     return c.json(modelConfigs);
   },

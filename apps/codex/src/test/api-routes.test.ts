@@ -91,9 +91,9 @@ describe('API Routes Compatibility Tests', () => {
     }, TEST_TIMEOUT);
   });
 
-  describe('/api/chat endpoint', () => {
-    test('should handle chat mode request', async () => {
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+  describe('/apix/chat endpoint (Mastra Streaming)', () => {
+    test('should handle chat mode request with Mastra agent', async () => {
+      const response = await fetch(`${API_BASE_URL}/apix/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,8 +126,58 @@ describe('API Routes Compatibility Tests', () => {
       console.log('✅ Chat mode request handled successfully');
     }, TEST_TIMEOUT);
 
-    test('should handle builder mode request', async () => {
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+    test('should handle Mastra native streaming', async () => {
+      const response = await fetch(`${API_BASE_URL}/apix/chat?stream=true`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'user',
+              content: 'Tell me a short story about AI',
+            },
+          ],
+          model: 'deepseek-chat',
+          mode: 'chat',
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('text/event-stream');
+
+      // Test streaming response
+      const reader = response.body?.getReader();
+      expect(reader).toBeDefined();
+
+      if (reader) {
+        const { value, done } = await reader.read();
+        expect(done).toBe(false);
+        expect(value).toBeDefined();
+
+        // Decode and check the SSE format
+        const chunk = new TextDecoder().decode(value);
+        expect(chunk).toMatch(/^data: /);
+
+        // Should contain proper JSON structure
+        const lines = chunk.split('\n');
+        const dataLine = lines.find(line => line.startsWith('data: '));
+        if (dataLine) {
+          const jsonData = JSON.parse(dataLine.substring(6));
+          expect(jsonData).toHaveProperty('type');
+          expect(['start', 'content', 'done', 'error']).toContain(jsonData.type);
+        }
+
+        reader.releaseLock();
+      }
+
+      console.log('✅ Mastra streaming handled successfully');
+    }, TEST_TIMEOUT);
+
+    test('should handle builder mode request with enhanced agent', async () => {
+      const response = await fetch(`${API_BASE_URL}/apix/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
