@@ -7,6 +7,12 @@ import { deepseekCodeGenerationWorkflow } from './workflows/deepseek-workflow';
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
 
+// Import API routes
+import { chatRoute } from './routes/chat';
+import { modelRoute } from './routes/model';
+import { deployRoute } from './routes/deploy';
+import { enhancedPromptRoute } from './routes/enhanced-prompt';
+
 // Import tools for direct access
 import {
   codeGeneratorTool,
@@ -54,13 +60,31 @@ export const mastra = new Mastra({
 
   // Enhanced logging
   logger: new PinoLogger({
-    name: 'DeepSeek-Mastra',
+    name: 'DeepSeek-Mastra-API',
     level: 'info',
   }),
 
-  // Server configuration for development
+  // Server configuration with API routes
   server: {
     port: 4111,
     host: 'localhost',
+    cors: {
+      origin: '*',
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowHeaders: ['Content-Type', 'Authorization', 'userId'],
+      credentials: false,
+    },
+    apiRoutes: [
+      chatRoute,
+      modelRoute,
+      deployRoute,
+      enhancedPromptRoute,
+    ],
   },
 });
+
+// Make Mastra instance globally available for API routes
+declare global {
+  var mastra: Mastra;
+}
+globalThis.mastra = mastra;
