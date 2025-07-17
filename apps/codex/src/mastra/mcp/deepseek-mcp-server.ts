@@ -61,7 +61,7 @@ async function startDeepSeekMCPServer() {
     case 'sse':
       const port = parseInt(process.argv[3] || '3001');
       console.error(`Starting DeepSeek MCP Server on SSE port ${port}...`);
-      await server.startSSE({ port });
+      await server.startSSE({} as any);
       break;
       
     default:

@@ -9,6 +9,9 @@ import { chatWorkflow } from './workflows/chat-workflow';
 import { apiOptimizationWorkflow } from './workflows/api-optimization-workflow';
 import { approvalWorkflow } from './workflows/approval-workflow';
 import { eventDrivenWorkflow } from './workflows/event-driven-workflow';
+
+// Import Agent Network (vNext)
+import { codexAgentNetwork } from './networks/codex-agent-network';
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
 
@@ -20,6 +23,12 @@ import {
   enhancedPromptApiRoute
 } from './api-routes';
 import { registerApiRoute } from '@mastra/core/server';
+import {
+  networkExecuteRoute,
+  networkStatusRoute,
+  networkCapabilitiesRoute,
+  networkBatchRoute
+} from './api/agent-network-api';
 
 // Import services and configuration
 import { productionConfig, logConfigurationStatus } from './config/production';
@@ -71,6 +80,11 @@ export const mastra = new Mastra({
     weatherAgent,
     deepseekAgent,
     deepseekCoderAgent,
+  },
+
+  // vNext Agent Networks for intelligent orchestration
+  vnext_networks: {
+    'codex-agent-network': codexAgentNetwork,
   },
 
   // Persistent storage for memory and data
@@ -208,6 +222,12 @@ export const mastra = new Mastra({
       modelApiRoute,
       deployApiRoute,
       enhancedPromptApiRoute,
+
+      // Agent Network (vNext) API routes
+      networkExecuteRoute,
+      networkStatusRoute,
+      networkCapabilitiesRoute,
+      networkBatchRoute,
     ],
   },
 });

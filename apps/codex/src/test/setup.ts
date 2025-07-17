@@ -7,10 +7,18 @@
 // Extend Jest timeout for AI model calls
 jest.setTimeout(30000);
 
-// Mock environment variables for testing
-process.env.DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'test-key';
-process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'test-key';
-process.env.DATABASE_URL = process.env.DATABASE_URL || ':memory:';
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+// Set environment variables for testing
+process.env.NODE_ENV = 'test';
+process.env.DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-74222fbc3182478da8a0f8857ef04b1a';
+process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'sk-proj-test-key-for-embeddings';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'file:../mastra.db';
+process.env.DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
 
 // Global test utilities
 global.console = {

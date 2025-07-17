@@ -17,7 +17,7 @@ import {
   generateRedisPromptTool, 
   generateMongoDBPromptTool, 
   generateSQLitePromptTool,
-  compareDatabasesTool 
+  compareDatabaseOptionsTool
 } from "./mastra/tools/database-prompt-tool";
 import { 
   jsonToZodTool, 
@@ -42,7 +42,7 @@ import {
 
 // Import agents
 import { deepseekAgent, deepseekCoderAgent } from "./mastra/agents/deepseek-agent";
-import { multiModelAgent } from "./mastra/agents/multi-model-agent";
+import { multiModelChatAgent } from "./mastra/agents/multi-model-agent";
 
 // Import workflows
 import { builderWorkflow } from "./mastra/workflows/builder-workflow";
@@ -73,7 +73,7 @@ async function startServer() {
       generateRedisPromptTool,
       generateMongoDBPromptTool,
       generateSQLitePromptTool,
-      compareDatabasesTool,
+      compareDatabaseOptionsTool,
       
       // Utility function tools
       jsonToZodTool,
@@ -100,7 +100,7 @@ async function startServer() {
     agents: {
       deepseekAgent,
       deepseekCoderAgent,
-      multiModelAgent,
+      multiModelChatAgent,
     },
     
     // Expose workflows as tools
@@ -110,20 +110,9 @@ async function startServer() {
     },
   });
 
-  // Start the server based on command line arguments
-  const transport = process.argv[2] || "stdio";
-  
-  if (transport === "stdio") {
-    await server.startStdio();
-    console.error("Codex MCP Server started on stdio");
-  } else if (transport === "sse") {
-    const port = parseInt(process.argv[3] || "3001");
-    await server.startSSE(port);
-    console.error(`Codex MCP Server started on SSE port ${port}`);
-  } else {
-    console.error("Usage: tsx src/mcp-server.ts [stdio|sse] [port]");
-    process.exit(1);
-  }
+  // Start the server on stdio (MCP standard)
+  await server.startStdio();
+  console.error("Codex MCP Server started on stdio");
 }
 
 // Handle graceful shutdown
