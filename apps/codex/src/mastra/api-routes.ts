@@ -29,84 +29,32 @@ export const chatApiRoute = registerApiRoute('apix/chat', {
     try {
       const body = await c.req.json();
       const validatedRequest = ChatRequestSchema.parse(body);
-      
+
       const { messages, model, mode, otherConfig, tools } = validatedRequest;
       const userId = c.req.header('userId') || null;
 
       // Import the agent factory
       const { AgentFactory } = await import('./agents/multi-model-agent');
 
-      let result;
-
-      // Route to appropriate handler based on mode
-      if (mode === 'chat') {
-        // Create a chat agent with the specified model
-        const chatAgent = AgentFactory.createChatAgent(model);
-
-        // Convert messages to Mastra format
-        const mastraMessages = messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-        }));
-
-        // Generate response using the agent with memory context
-        result = await chatAgent.generate(mastraMessages, {
-          resourceId: userId || 'anonymous',
-          threadId: `chat_${Date.now()}`,
-          maxSteps: 3, // Allow multi-step reasoning
-        });
-      } else {
-        // Builder mode - determine the best model for the task
-        let selectedModel = model;
-        if (otherConfig?.type === 'miniProgram' || otherConfig?.isBackEnd) {
-          // For complex coding tasks, use the best coding model
-          selectedModel = AgentFactory.getBestModelForTask('coding');
-        }
-
-        // Create a builder agent with the selected model
-        const builderAgent = AgentFactory.createBuilderAgent(selectedModel);
-
-        // Convert messages to Mastra format
-        const mastraMessages = messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-        }));
-
-        // Generate response using the builder agent with enhanced context
-        result = await builderAgent.generate(mastraMessages, {
-          resourceId: userId || 'anonymous',
-          threadId: `builder_${Date.now()}`,
-          maxSteps: 5, // Allow more steps for complex code generation
-        });
-      }
-
       // Check if streaming is requested
       const isStreaming = c.req.header('Accept')?.includes('text/event-stream') ||
                          c.req.query('stream') === 'true';
 
-      if (isStreaming) {
-        // Handle streaming response
-        return handleStreamingResponse(c, result, mode, model, userId);
+      // Route to appropriate handler based on mode
+      if (mode === 'chat') {
+        return await handleChatMode(messages, model, userId, tools, isStreaming, c);
       } else {
-        // Regular JSON response
-        return c.json({
-          choices: [{
-            message: {
-              role: 'assistant',
-              content: result.text,
-            },
-          }],
-        });
+        return await handleBuilderMode(messages, model, userId, otherConfig, tools, isStreaming, c);
       }
 
     } catch (error) {
       console.error('Chat API Error:', error);
-      
+
       // Handle specific error types
       if (error instanceof z.ZodError) {
         return c.json({ error: 'Invalid request format', details: error.errors }, 400);
       }
-      
+
       if (error instanceof Error) {
         if (error.message?.includes('API key')) {
           return c.json({ error: 'Invalid or missing API key' }, 401);
@@ -340,7 +288,215 @@ Return only the enhanced prompt without any additional explanation or formatting
   },
 });
 
-// Streaming response handler
+// Chat mode handler with proper Mastra streaming
+async function handleChatMode(
+  messages: any[],
+  model: string,
+  userId: string | null,
+  tools: any,
+  isStreaming: boolean,
+  c: any
+) {
+  const { AgentFactory } = await import('./agents/multi-model-agent');
+
+  // Create a chat agent with the specified model
+  const chatAgent = AgentFactory.createChatAgent(model);
+
+  // Convert messages to Mastra format
+  const mastraMessages = messages.map(msg => ({
+    role: msg.role,
+    content: msg.content,
+  }));
+
+  if (isStreaming) {
+    // Use Mastra's native streaming with proper SSE format
+    const stream = await chatAgent.stream(mastraMessages, {
+      memory: {
+        resource: userId || 'anonymous',
+        thread: `chat_${Date.now()}`,
+      },
+      maxSteps: 3, // Allow multi-step reasoning
+      onStepFinish: ({ text, toolCalls, toolResults }) => {
+        console.log('Step completed:', { text, toolCalls, toolResults });
+      },
+    });
+
+    // Set up SSE headers
+    c.header('Content-Type', 'text/event-stream');
+    c.header('Cache-Control', 'no-cache');
+    c.header('Connection', 'keep-alive');
+    c.header('Access-Control-Allow-Origin', '*');
+
+    // Create a readable stream for SSE
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send initial event
+          controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
+
+          // Stream the text chunks
+          for await (const chunk of stream.textStream) {
+            const data = JSON.stringify({
+              type: 'content',
+              content: chunk,
+            });
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          }
+
+          // Send completion event
+          controller.enqueue(encoder.encode('data: {"type":"done"}\n\n'));
+          controller.close();
+        } catch (error) {
+          console.error('Streaming error:', error);
+          const errorData = JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : String(error),
+          });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } else {
+    // Non-streaming response
+    const result = await chatAgent.generate(mastraMessages, {
+      memory: {
+        resource: userId || 'anonymous',
+        thread: `chat_${Date.now()}`,
+      },
+      maxSteps: 3,
+    });
+
+    return c.json({
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: result.text,
+        },
+      }],
+    });
+  }
+}
+
+// Builder mode handler with proper Mastra streaming
+async function handleBuilderMode(
+  messages: any[],
+  model: string,
+  userId: string | null,
+  otherConfig: any,
+  tools: any,
+  isStreaming: boolean,
+  c: any
+) {
+  const { AgentFactory } = await import('./agents/multi-model-agent');
+
+  // Determine the best model for the task
+  let selectedModel = model;
+  if (otherConfig?.type === 'miniProgram' || otherConfig?.isBackEnd) {
+    // For complex coding tasks, use the best coding model
+    selectedModel = AgentFactory.getBestModelForTask('coding');
+  }
+
+  // Create a builder agent with the selected model
+  const builderAgent = AgentFactory.createBuilderAgent(selectedModel);
+
+  // Convert messages to Mastra format
+  const mastraMessages = messages.map(msg => ({
+    role: msg.role,
+    content: msg.content,
+  }));
+
+  if (isStreaming) {
+    // Use Mastra's native streaming with enhanced context for builder mode
+    const stream = await builderAgent.stream(mastraMessages, {
+      memory: {
+        resource: userId || 'anonymous',
+        thread: `builder_${Date.now()}`,
+      },
+      maxSteps: 5, // Allow more steps for complex code generation
+      onStepFinish: ({ text, toolCalls, toolResults }) => {
+        console.log('Builder step completed:', { text, toolCalls, toolResults });
+      },
+    });
+
+    // Set up SSE headers
+    c.header('Content-Type', 'text/event-stream');
+    c.header('Cache-Control', 'no-cache');
+    c.header('Connection', 'keep-alive');
+    c.header('Access-Control-Allow-Origin', '*');
+
+    // Create a readable stream for SSE
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send initial event
+          controller.enqueue(encoder.encode('data: {"type":"start"}\n\n'));
+
+          // Stream the text chunks
+          for await (const chunk of stream.textStream) {
+            const data = JSON.stringify({
+              type: 'content',
+              content: chunk,
+            });
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          }
+
+          // Send completion event
+          controller.enqueue(encoder.encode('data: {"type":"done"}\n\n'));
+          controller.close();
+        } catch (error) {
+          console.error('Builder streaming error:', error);
+          const errorData = JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : String(error),
+          });
+          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } else {
+    // Non-streaming response
+    const result = await builderAgent.generate(mastraMessages, {
+      memory: {
+        resource: userId || 'anonymous',
+        thread: `builder_${Date.now()}`,
+      },
+      maxSteps: 5,
+    });
+
+    return c.json({
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: result.text,
+        },
+      }],
+    });
+  }
+}
+
+// Legacy streaming response handler (deprecated - kept for compatibility)
 function handleStreamingResponse(
   c: any,
   result: any,
