@@ -19,6 +19,14 @@ import {
   apiDocumentationTool,
   codeCommentTool
 } from '../tools/documentation-tool';
+import {
+  parseArtifactTool,
+  processMessagesTool,
+  analyzeFileStructureTool,
+  filterFilesTool,
+  validateFilesTool,
+  summarizeFilesTool
+} from '../tools/file-processing-tool';
 
 // Memory configuration for agents
 const createMemory = () => new Memory({
@@ -92,8 +100,20 @@ export function createBuilderAgent(modelKey: string = 'deepseek-chat') {
     - Use code-analysis for reviewing and improving existing code
     - Use project-structure for scaffolding complete projects
     - Use documentation tools for creating comprehensive docs
-    
-    Always strive to provide comprehensive, accurate, and actionable responses 
+    - Use parse-artifact to extract files from boltArtifact tags
+    - Use process-messages to handle multiple messages with file content
+    - Use analyze-file-structure to understand project architecture
+    - Use filter-files to work with specific file types
+    - Use validate-files to check for issues in file structure
+    - Use summarize-files to get project overviews
+
+    **File Processing Capabilities:**
+    You can now process boltArtifact tags from user messages, extract file content,
+    analyze project structures, and provide intelligent insights about codebases.
+    When users share project files or code through boltArtifact tags, use the
+    file processing tools to understand the context and provide better assistance.
+
+    Always strive to provide comprehensive, accurate, and actionable responses
     that align with modern development practices.`,
     model,
     tools: {
@@ -103,6 +123,12 @@ export function createBuilderAgent(modelKey: string = 'deepseek-chat') {
       documentationTool,
       apiDocumentationTool,
       codeCommentTool,
+      parseArtifactTool,
+      processMessagesTool,
+      analyzeFileStructureTool,
+      filterFilesTool,
+      validateFilesTool,
+      summarizeFilesTool,
     },
     memory: createMemory(),
   });
