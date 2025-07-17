@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { openai } from '@ai-sdk/openai';
-import { deepseekChat, deepseekCoder, DEEPSEEK_MODELS } from '../models/deepseek';
+import { deepseekChat, deepseekCoder, DEEPSEEK_CONFIG } from '../models/deepseek';
 import {
   codeGeneratorTool,
   codeAnalysisTool,
@@ -22,23 +22,35 @@ import {
  * - Technical problem solving
  * - Software development assistance
  * - Architecture and design guidance
+ *
+ * This agent follows Mastra's best practices for agent configuration,
+ * including proper memory setup and tool integration.
  */
 
-// Enhanced memory configuration with working memory and semantic recall
-const deepseekMemory = new Memory({
-  storage: new LibSQLStore({
-    url: 'file:../deepseek-memory.db',
-  }),
-  vector: new LibSQLVector({
-    connectionUrl: 'file:../deepseek-memory.db',
-  }),
-  embedder: openai.embedding('text-embedding-3-small'),
-  options: {
-    lastMessages: 15, // More context for development conversations
-    workingMemory: {
-      enabled: true,
-      scope: 'resource', // Remember user preferences across sessions
-      template: `# Developer Profile
+/**
+ * Create memory configuration for DeepSeek agents
+ *
+ * This follows Mastra's recommended memory patterns with:
+ * - Persistent storage using LibSQL
+ * - Vector search capabilities for semantic recall
+ * - Working memory for user preferences
+ * - Optimized for development conversations
+ */
+function createDeepSeekMemory(dbName: string) {
+  return new Memory({
+    storage: new LibSQLStore({
+      url: `file:../${dbName}.db`,
+    }),
+    vector: new LibSQLVector({
+      connectionUrl: `file:../${dbName}.db`,
+    }),
+    embedder: openai.embedding('text-embedding-3-small'),
+    options: {
+      lastMessages: 15, // Optimal context for development conversations
+      workingMemory: {
+        enabled: true,
+        scope: 'resource', // Remember user preferences across sessions
+        template: `# Developer Profile
 
 ## Personal Info
 - Name:
@@ -63,15 +75,23 @@ const deepseekMemory = new Memory({
 - Open Questions:
 - Next Steps:
 `,
+      },
+      semanticRecall: {
+        topK: 5,
+        messageRange: 3,
+        scope: 'resource', // Recall from all user conversations
+      },
     },
-    semanticRecall: {
-      topK: 5,
-      messageRange: 3,
-      scope: 'resource', // Recall from all user conversations
-    },
-  },
-});
+  });
+}
 
+/**
+ * DeepSeek General Development Agent
+ *
+ * A comprehensive AI assistant for software development tasks.
+ * Optimized for general development assistance, architecture guidance,
+ * and technical problem-solving.
+ */
 export const deepseekAgent = new Agent({
   name: 'DeepSeek Agent',
   description: 'Advanced AI assistant specialized in software development, code generation, and technical problem-solving',
@@ -118,7 +138,7 @@ export const deepseekAgent = new Agent({
 
 Always strive to provide comprehensive, accurate, and actionable responses that align with the user's experience level and project context.`,
   model: deepseekChat(),
-  memory: deepseekMemory,
+  memory: createDeepSeekMemory('deepseek-memory'),
   // DeepSeek agent tools for comprehensive development assistance
   tools: {
     codeGeneratorTool,
@@ -133,24 +153,28 @@ Always strive to provide comprehensive, accurate, and actionable responses that 
 /**
  * DeepSeek Coder Agent
  *
- * A specialized variant optimized specifically for coding tasks
+ * A specialized variant optimized specifically for coding tasks.
+ * Uses the DeepSeek Coder model which is fine-tuned for programming.
  */
 
-// Specialized memory for coding-focused conversations
-const deepseekCoderMemory = new Memory({
-  storage: new LibSQLStore({
-    url: 'file:../deepseek-coder-memory.db',
-  }),
-  vector: new LibSQLVector({
-    connectionUrl: 'file:../deepseek-coder-memory.db',
-  }),
-  embedder: openai.embedding('text-embedding-3-small'),
-  options: {
-    lastMessages: 20, // More context for complex coding discussions
-    workingMemory: {
-      enabled: true,
-      scope: 'resource',
-      template: `# Coding Session Context
+/**
+ * Create specialized memory configuration for coding-focused conversations
+ */
+function createDeepSeekCoderMemory() {
+  return new Memory({
+    storage: new LibSQLStore({
+      url: 'file:../deepseek-coder-memory.db',
+    }),
+    vector: new LibSQLVector({
+      connectionUrl: 'file:../deepseek-coder-memory.db',
+    }),
+    embedder: openai.embedding('text-embedding-3-small'),
+    options: {
+      lastMessages: 20, // More context for complex coding discussions
+      workingMemory: {
+        enabled: true,
+        scope: 'resource',
+        template: `# Coding Session Context
 
 ## Developer Info
 - Name:
@@ -180,14 +204,15 @@ const deepseekCoderMemory = new Memory({
 - Next Steps:
 - Blockers:
 `,
+      },
+      semanticRecall: {
+        topK: 8, // More recall for coding context
+        messageRange: 2,
+        scope: 'resource',
+      },
     },
-    semanticRecall: {
-      topK: 8, // More recall for coding context
-      messageRange: 2,
-      scope: 'resource',
-    },
-  },
-});
+  });
+}
 
 export const deepseekCoderAgent = new Agent({
   name: 'DeepSeek Coder',
@@ -235,7 +260,7 @@ export const deepseekCoderAgent = new Agent({
 
 Focus on delivering practical, working solutions with clear explanations and comprehensive examples tailored to the user's skill level and project requirements.`,
   model: deepseekCoder(), // Use the specialized coder model
-  memory: deepseekCoderMemory,
+  memory: createDeepSeekCoderMemory(),
   // Specialized tools for coding tasks
   tools: {
     codeGeneratorTool,

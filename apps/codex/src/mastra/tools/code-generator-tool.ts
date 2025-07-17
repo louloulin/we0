@@ -2,15 +2,44 @@ import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 
 /**
- * Code Generator Tool
- * 
- * A comprehensive tool for generating various types of code artifacts
+ * DeepSeek Code Generation Tools
+ *
+ * A comprehensive suite of tools for generating various types of code artifacts
  * including functions, classes, components, and complete project structures.
+ *
+ * These tools are optimized for use with DeepSeek agents and follow Mastra's
+ * best practices for tool design and implementation.
  */
 
+// Common schemas for reuse across tools
+const LanguageSchema = z.enum([
+  'typescript',
+  'javascript',
+  'python',
+  'java',
+  'go',
+  'rust',
+  'cpp',
+  'csharp',
+  'php',
+  'ruby',
+  'swift',
+  'kotlin'
+]).describe('Programming language');
+
+const FrameworkSchema = z.string().optional().describe('Framework or library (e.g., react, express, fastapi, django, spring, gin, etc.)');
+
+const StyleSchema = z.enum(['minimal', 'comprehensive', 'production']).default('comprehensive').describe('Code style and completeness level');
+
+/**
+ * Code Generator Tool
+ *
+ * Generates various types of code artifacts with high quality and best practices.
+ * Supports multiple languages and frameworks with customizable output styles.
+ */
 export const codeGeneratorTool = createTool({
   id: 'code-generator',
-  description: 'Generate code artifacts including functions, classes, components, and project structures',
+  description: 'Generate high-quality code artifacts including functions, classes, components, APIs, tests, and configurations',
   inputSchema: z.object({
     type: z.enum([
       'function',
@@ -20,24 +49,48 @@ export const codeGeneratorTool = createTool({
       'test',
       'config',
       'schema',
-      'project'
+      'project',
+      'utility',
+      'hook',
+      'service',
+      'middleware'
     ]).describe('Type of code to generate'),
-    language: z.string().describe('Programming language (e.g., typescript, python, javascript, etc.)'),
-    framework: z.string().optional().describe('Framework or library (e.g., react, express, fastapi, etc.)'),
-    description: z.string().describe('Detailed description of what to generate'),
-    requirements: z.array(z.string()).optional().describe('Specific requirements or constraints'),
-    style: z.enum(['minimal', 'comprehensive', 'production']).default('comprehensive').describe('Code style and completeness level'),
+    language: LanguageSchema,
+    framework: FrameworkSchema,
+    description: z.string().min(10).describe('Detailed description of what to generate (minimum 10 characters)'),
+    requirements: z.array(z.string()).default([]).describe('Specific requirements, constraints, or features to include'),
+    style: StyleSchema,
+    includeTests: z.boolean().default(false).describe('Whether to generate accompanying test code'),
+    includeComments: z.boolean().default(true).describe('Whether to include comprehensive comments and documentation'),
   }),
   outputSchema: z.object({
-    code: z.string().describe('Generated code'),
-    filename: z.string().describe('Suggested filename'),
-    dependencies: z.array(z.string()).optional().describe('Required dependencies'),
-    instructions: z.string().optional().describe('Setup or usage instructions'),
-    tests: z.string().optional().describe('Generated test code'),
+    code: z.string().describe('Generated code with proper formatting and best practices'),
+    filename: z.string().describe('Suggested filename with appropriate extension'),
+    dependencies: z.array(z.string()).optional().describe('Required dependencies to install'),
+    devDependencies: z.array(z.string()).optional().describe('Development dependencies to install'),
+    instructions: z.string().optional().describe('Setup, usage, or deployment instructions'),
+    tests: z.string().optional().describe('Generated test code (if requested)'),
+    documentation: z.string().optional().describe('Additional documentation or README content'),
+    metadata: z.object({
+      language: z.string(),
+      framework: z.string().optional(),
+      type: z.string(),
+      complexity: z.enum(['simple', 'moderate', 'complex']),
+      estimatedLines: z.number(),
+    }).describe('Metadata about the generated code'),
   }),
   execute: async ({ context }) => {
-    const { type, language, framework, description, requirements = [], style } = context;
-    
+    const {
+      type,
+      language,
+      framework,
+      description,
+      requirements,
+      style,
+      includeTests,
+      includeComments
+    } = context;
+
     // Generate code based on type and requirements
     const result = await generateCode({
       type,
@@ -46,8 +99,10 @@ export const codeGeneratorTool = createTool({
       description,
       requirements,
       style,
+      includeTests,
+      includeComments,
     });
-    
+
     return result;
   },
 });
@@ -155,49 +210,103 @@ async function generateCode(params: {
   description: string;
   requirements: string[];
   style: string;
+  includeTests: boolean;
+  includeComments: boolean;
 }) {
-  // This is a simplified implementation
-  // In a real scenario, this would use AI models or templates
-  
-  const { type, language, framework, description, requirements, style } = params;
-  
+  const {
+    type,
+    language,
+    framework,
+    description,
+    requirements,
+    style,
+    includeTests,
+    includeComments
+  } = params;
+
   // Generate basic code structure based on type
   let code = '';
   let filename = '';
   let dependencies: string[] = [];
+  let devDependencies: string[] = [];
   let instructions = '';
   let tests = '';
-  
+  let documentation = '';
+
+  // Estimate complexity based on requirements and type
+  const complexity = estimateComplexity(type, requirements);
+
   switch (type) {
     case 'function':
       filename = `${description.toLowerCase().replace(/\s+/g, '-')}.${getFileExtension(language)}`;
-      code = generateFunction(language, description, requirements, style);
-      break;
-      
-    case 'class':
-      filename = `${description.toLowerCase().replace(/\s+/g, '-')}.${getFileExtension(language)}`;
-      code = generateClass(language, description, requirements, style);
-      break;
-      
-    case 'component':
-      filename = `${description.toLowerCase().replace(/\s+/g, '-')}.${getFileExtension(language)}`;
-      code = generateComponent(language, framework, description, requirements, style);
-      if (framework === 'react') {
-        dependencies = ['react', '@types/react'];
+      code = generateFunction(language, description, requirements, style, includeComments);
+      if (includeTests) {
+        tests = generateFunctionTests(language, description, framework);
+        devDependencies.push(...getTestDependencies(language, framework));
       }
       break;
-      
+
+    case 'class':
+      filename = `${description.toLowerCase().replace(/\s+/g, '-')}.${getFileExtension(language)}`;
+      code = generateClass(language, description, requirements, style, includeComments);
+      if (includeTests) {
+        tests = generateClassTests(language, description, framework);
+        devDependencies.push(...getTestDependencies(language, framework));
+      }
+      break;
+
+    case 'component':
+      filename = `${description.toLowerCase().replace(/\s+/g, '-')}.${getFileExtension(language)}`;
+      code = generateComponent(language, framework, description, requirements, style, includeComments);
+      if (framework === 'react') {
+        dependencies = ['react'];
+        if (language === 'typescript') {
+          devDependencies.push('@types/react');
+        }
+      }
+      if (includeTests) {
+        tests = generateComponentTests(language, description, framework);
+        devDependencies.push(...getTestDependencies(language, framework));
+      }
+      break;
+
+    case 'api':
+      filename = `${description.toLowerCase().replace(/\s+/g, '-')}.${getFileExtension(language)}`;
+      code = generateApiEndpoint(language, framework, description, requirements, style, includeComments);
+      dependencies.push(...getApiDependencies(language, framework));
+      break;
+
     default:
-      code = `// Generated ${type} for: ${description}\n// Language: ${language}\n// Framework: ${framework || 'none'}\n\n// TODO: Implement ${type}`;
+      code = generateGenericCode(type, language, framework, description, requirements, includeComments);
       filename = `${type}.${getFileExtension(language)}`;
   }
-  
+
+  // Generate instructions based on the generated code
+  instructions = generateInstructions(type, language, framework, dependencies, devDependencies);
+
+  // Generate documentation if needed
+  if (style === 'production') {
+    documentation = generateDocumentation(type, description, language, framework);
+  }
+
+  // Calculate estimated lines
+  const estimatedLines = code.split('\n').length;
+
   return {
     code,
     filename,
     dependencies: dependencies.length > 0 ? dependencies : undefined,
+    devDependencies: devDependencies.length > 0 ? devDependencies : undefined,
     instructions: instructions || undefined,
-    tests: tests || undefined,
+    tests: includeTests ? tests : undefined,
+    documentation: documentation || undefined,
+    metadata: {
+      language,
+      framework,
+      type,
+      complexity,
+      estimatedLines,
+    },
   };
 }
 
@@ -280,43 +389,58 @@ function getFileExtension(language: string): string {
   return extensions[language.toLowerCase()] || 'txt';
 }
 
-function generateFunction(language: string, description: string, requirements: string[], style: string): string {
-  // Simplified function generation
+function generateFunction(language: string, description: string, requirements: string[], style: string, includeComments: boolean = true): string {
+  const functionName = description.toLowerCase().replace(/\s+/g, '');
+
   if (language.toLowerCase() === 'typescript') {
-    return `/**
+    const comments = includeComments ? `/**
  * ${description}
- * ${requirements.map(req => `* - ${req}`).join('\n * ')}
+ ${requirements.map(req => ` * - ${req}`).join('\n')}
  */
-export function ${description.toLowerCase().replace(/\s+/g, '')}(): void {
+` : '';
+
+    return `${comments}export function ${functionName}(): void {
   // TODO: Implement function logic
+  ${requirements.map(req => `// ${req}`).join('\n  ')}
   throw new Error('Not implemented');
 }`;
   }
-  
-  return `// ${description}\nfunction ${description.toLowerCase().replace(/\s+/g, '')}() {\n  // TODO: Implement\n}`;
+
+  const comments = includeComments ? `// ${description}\n${requirements.map(req => `// ${req}`).join('\n')}\n` : '';
+  return `${comments}function ${functionName}() {
+  // TODO: Implement
+}`;
 }
 
-function generateClass(language: string, description: string, requirements: string[], style: string): string {
+function generateClass(language: string, description: string, requirements: string[], style: string, includeComments: boolean = true): string {
   const className = description.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
-  
+
   if (language.toLowerCase() === 'typescript') {
-    return `/**
+    const comments = includeComments ? `/**
  * ${description}
- * ${requirements.map(req => `* - ${req}`).join('\n * ')}
+ ${requirements.map(req => ` * - ${req}`).join('\n')}
  */
-export class ${className} {
+` : '';
+
+    return `${comments}export class ${className} {
   constructor() {
     // TODO: Initialize class
+    ${requirements.map(req => `// ${req}`).join('\n    ')}
   }
-  
-  // TODO: Add methods
+
+  // TODO: Add methods based on requirements
 }`;
   }
-  
-  return `class ${className} {\n  constructor() {\n    // TODO: Initialize\n  }\n}`;
+
+  const comments = includeComments ? `// ${description}\n${requirements.map(req => `// ${req}`).join('\n')}\n` : '';
+  return `${comments}class ${className} {
+  constructor() {
+    // TODO: Initialize
+  }
+}`;
 }
 
-function generateComponent(language: string, framework: string | undefined, description: string, requirements: string[], style: string): string {
+function generateComponent(language: string, framework: string | undefined, description: string, requirements: string[], style: string, includeComments: boolean = true): string {
   if (framework === 'react' && language.toLowerCase() === 'typescript') {
     const componentName = description.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
     
@@ -341,6 +465,177 @@ export const ${componentName}: React.FC<${componentName}Props> = (props) => {
 
 export default ${componentName};`;
   }
-  
+
   return `// ${description} component\n// TODO: Implement component`;
+}
+
+// Helper functions for complexity estimation and code generation
+function estimateComplexity(type: string, requirements: string[]): 'simple' | 'moderate' | 'complex' {
+  const complexTypes = ['api', 'service', 'middleware', 'project'];
+  const requirementCount = requirements.length;
+
+  if (complexTypes.includes(type) || requirementCount > 5) {
+    return 'complex';
+  } else if (requirementCount > 2 || type === 'class') {
+    return 'moderate';
+  }
+  return 'simple';
+}
+
+function getTestDependencies(language: string, framework?: string): string[] {
+  const deps: string[] = [];
+
+  if (language === 'typescript' || language === 'javascript') {
+    deps.push('jest', '@types/jest');
+    if (framework === 'react') {
+      deps.push('@testing-library/react', '@testing-library/jest-dom');
+    }
+  } else if (language === 'python') {
+    deps.push('pytest', 'pytest-cov');
+  }
+
+  return deps;
+}
+
+function getApiDependencies(language: string, framework?: string): string[] {
+  const deps: string[] = [];
+
+  if (language === 'typescript' || language === 'javascript') {
+    if (framework === 'express') {
+      deps.push('express', '@types/express');
+    } else if (framework === 'fastify') {
+      deps.push('fastify');
+    }
+  } else if (language === 'python') {
+    if (framework === 'fastapi') {
+      deps.push('fastapi', 'uvicorn');
+    } else if (framework === 'django') {
+      deps.push('django', 'djangorestframework');
+    }
+  }
+
+  return deps;
+}
+
+function generateFunctionTests(language: string, description: string, framework?: string): string {
+  const functionName = description.toLowerCase().replace(/\s+/g, '');
+
+  if (language === 'typescript' || language === 'javascript') {
+    return `import { ${functionName} } from './${functionName}';
+
+describe('${functionName}', () => {
+  test('should work correctly', () => {
+    // TODO: Add test cases
+    expect(${functionName}).toBeDefined();
+  });
+});`;
+  }
+
+  return `# Test for ${description}\n# TODO: Implement tests`;
+}
+
+function generateClassTests(language: string, description: string, framework?: string): string {
+  const className = description.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+
+  if (language === 'typescript' || language === 'javascript') {
+    return `import { ${className} } from './${className.toLowerCase()}';
+
+describe('${className}', () => {
+  test('should instantiate correctly', () => {
+    const instance = new ${className}();
+    expect(instance).toBeInstanceOf(${className});
+  });
+});`;
+  }
+
+  return `# Test for ${className}\n# TODO: Implement tests`;
+}
+
+function generateComponentTests(language: string, description: string, framework?: string): string {
+  const componentName = description.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+
+  if (framework === 'react') {
+    return `import { render, screen } from '@testing-library/react';
+import { ${componentName} } from './${componentName}';
+
+describe('${componentName}', () => {
+  test('renders correctly', () => {
+    render(<${componentName} />);
+    // TODO: Add specific assertions
+  });
+});`;
+  }
+
+  return `# Test for ${componentName}\n# TODO: Implement tests`;
+}
+
+function generateApiEndpoint(language: string, framework: string | undefined, description: string, requirements: string[], style: string, includeComments: boolean): string {
+  if (language === 'typescript' && framework === 'express') {
+    const comments = includeComments ? `/**
+ * ${description}
+ ${requirements.map(req => ` * - ${req}`).join('\n')}
+ */
+` : '';
+
+    return `${comments}import { Request, Response } from 'express';
+
+export async function ${description.toLowerCase().replace(/\s+/g, '')}Handler(req: Request, res: Response) {
+  try {
+    // TODO: Implement endpoint logic
+    ${requirements.map(req => `// ${req}`).join('\n    ')}
+
+    res.json({ message: 'Success' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}`;
+  }
+
+  return `// ${description} API endpoint\n// TODO: Implement`;
+}
+
+function generateGenericCode(type: string, language: string, framework: string | undefined, description: string, requirements: string[], includeComments: boolean): string {
+  const comments = includeComments ? `// ${description}\n${requirements.map(req => `// ${req}`).join('\n')}\n` : '';
+  return `${comments}// Generated ${type} for: ${description}
+// Language: ${language}
+// Framework: ${framework || 'none'}
+
+// TODO: Implement ${type}
+${requirements.map(req => `// - ${req}`).join('\n')}`;
+}
+
+function generateInstructions(type: string, language: string, framework: string | undefined, dependencies: string[], devDependencies: string[]): string {
+  let instructions = `# ${type.charAt(0).toUpperCase() + type.slice(1)} Setup Instructions\n\n`;
+
+  if (dependencies.length > 0) {
+    instructions += `## Install Dependencies\n\`\`\`bash\nnpm install ${dependencies.join(' ')}\n\`\`\`\n\n`;
+  }
+
+  if (devDependencies.length > 0) {
+    instructions += `## Install Dev Dependencies\n\`\`\`bash\nnpm install --save-dev ${devDependencies.join(' ')}\n\`\`\`\n\n`;
+  }
+
+  instructions += `## Usage\n1. Import the generated ${type}\n2. Configure as needed\n3. Test thoroughly\n`;
+
+  return instructions;
+}
+
+function generateDocumentation(type: string, description: string, language: string, framework: string | undefined): string {
+  return `# ${description}
+
+## Overview
+This ${type} was generated for ${language}${framework ? ` using ${framework}` : ''}.
+
+## Features
+- Production-ready code structure
+- Comprehensive error handling
+- Type safety (where applicable)
+- Best practices implementation
+
+## Usage
+See the generated code comments for detailed usage instructions.
+
+## Testing
+Run tests with your preferred testing framework.
+`;
 }

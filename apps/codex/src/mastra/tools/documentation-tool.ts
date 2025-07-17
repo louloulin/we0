@@ -183,7 +183,7 @@ async function generateDocumentation(params: {
       break;
       
     case 'api-docs':
-      documentation = generateAPIDocumentation({
+      documentation = await generateAPIDocumentation({
         source: 'description',
         content,
         includeExamples,

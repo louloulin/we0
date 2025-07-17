@@ -49,22 +49,8 @@ export const mastra = new Mastra({
   // Persistent storage for memory and data
   storage,
 
-  // Register tools for direct access
-  tools: {
-    // Code generation and analysis tools
-    codeGeneratorTool,
-    codeAnalysisTool,
-    projectStructureTool,
-
-    // Documentation tools
-    documentationTool,
-    apiDocumentationTool,
-    codeCommentTool,
-
-    // RAG tools for codebase search
-    codebaseSearchTool,
-    codeDocumentationSearchTool,
-  },
+  // Note: Tools are registered with agents, not directly with Mastra
+  // The tools are available through the agents that use them
 
   // Enhanced logging
   logger: new PinoLogger({

@@ -60,10 +60,8 @@ expect.extend({
 });
 
 // Type declarations for custom matchers
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeValidCode(): R;
-    }
+declare module '@jest/expect' {
+  interface Matchers<R> {
+    toBeValidCode(): R;
   }
 }
