@@ -30,52 +30,68 @@ export async function streamResponse(
         tools: toolList,
         toolCallStreaming: true,
         onError: (err: any) => {
+            console.error('Stream error:', err);
+            // 确保流被正确关闭
+            stream.close();
+
             // 获取错误信息，优先使用 cause 属性
             const errorCause = err?.cause?.message || err?.cause || err?.error?.message
             const msg = errorCause || err?.errors?.[0]?.responseBody || JSON.stringify(err);
 
-            if (msg) {
-                throw new Error(msg);
-            }
-            const error = new Error(msg || JSON.stringify(err));
-            error.cause = msg; // 保存原始错误信息到 cause
+            const error = new Error(msg || 'Stream processing error');
+            error.cause = err; // 保存原始错误信息到 cause
             throw error;
         },
         onFinish: async (response) => {
-            const {text: content, finishReason} = response;
+            try {
+                const {text: content, finishReason} = response;
 
-            if (finishReason !== "length") {
-                const tokens = estimateTokens(content);
-                if (userId) {
-                    await deductUserTokens(userId, tokens);
+                if (finishReason !== "length") {
+                    const tokens = estimateTokens(content);
+                    if (userId) {
+                        await deductUserTokens(userId, tokens);
+                    }
+                    stream.close();
+                    return;
                 }
-                return stream.close();
-            }
 
-            if (stream.switches >= MAX_RESPONSE_SEGMENTS) {
-                throw Error("Cannot continue message: Maximum segments reached");
-            }
+                if (stream.switches >= MAX_RESPONSE_SEGMENTS) {
+                    stream.close();
+                    throw Error("Cannot continue message: Maximum segments reached");
+                }
 
-            messages.push({id: uuidv4(), role: "assistant", content});
-            messages.push({id: uuidv4(), role: "user", content: CONTINUE_PROMPT});
+                messages.push({id: uuidv4(), role: "assistant", content});
+                messages.push({id: uuidv4(), role: "user", content: CONTINUE_PROMPT});
+            } catch (error) {
+                console.error('onFinish error:', error);
+                stream.close();
+                throw error;
+            }
         },
     };
 
     try {
-        const result = streamTextFn(messages, options, model);
+        const result = await streamTextFn(messages, options, model);
         return result.toDataStreamResponse({
             sendReasoning: true,
         });
     } catch (error: any) {
+        console.error('streamResponse error:', error);
         // 确保流被关闭
         stream.close();
-        // 如果错误中包含 cause，将其作为新错误抛出
+
+        // 处理不同类型的错误
         if (error.cause) {
             const newError = new Error(error.cause);
             newError.cause = error.cause;
             throw newError;
         }
-        stream.close();
+
+        // 处理管道错误
+        if (error.message?.includes('pipe')) {
+            throw new Error('Stream processing failed');
+        }
+
         throw error;
     }
 }

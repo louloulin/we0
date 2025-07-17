@@ -33,7 +33,8 @@ export default class SwitchableStream extends TransformStream {
 
   private async _pumpStream() {
     if (!this._currentReader || !this._controller) {
-      throw new Error('Stream is not properly initialized');
+      console.error('Stream is not properly initialized');
+      return;
     }
 
     try {
@@ -44,20 +45,42 @@ export default class SwitchableStream extends TransformStream {
           break;
         }
 
-        this._controller.enqueue(value);
+        // 检查控制器是否仍然可用
+        if (this._controller) {
+          this._controller.enqueue(value);
+        } else {
+          break;
+        }
       }
     } catch (error) {
-      console.log(error);
-      this._controller.error(error);
+      console.error('Stream pump error:', error);
+      // 只有在控制器仍然可用时才报告错误
+      if (this._controller) {
+        try {
+          this._controller.error(error);
+        } catch (controllerError) {
+          console.error('Controller error reporting failed:', controllerError);
+        }
+      }
     }
   }
 
   close() {
-    if (this._currentReader) {
-      this._currentReader.cancel();
-    }
+    try {
+      if (this._currentReader) {
+        this._currentReader.cancel().catch(error => {
+          console.error('Error canceling reader:', error);
+        });
+        this._currentReader = null;
+      }
 
-    this._controller?.terminate();
+      if (this._controller) {
+        this._controller.terminate();
+        this._controller = null;
+      }
+    } catch (error) {
+      console.error('Error closing stream:', error);
+    }
   }
 
   get switches() {

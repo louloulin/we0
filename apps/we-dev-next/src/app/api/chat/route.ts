@@ -29,20 +29,42 @@ export async function POST(request: Request) {
             tools,
         } = (await request.json()) as ChatRequest;
         const userId = request.headers.get("userId");
+
         const result =
             mode === ChatMode.Chat
                 ? await handleChatMode(messages, model, userId, tools)
                 : await handleBuilderMode(messages, model, userId, otherConfig, tools)
-        console.log(result, 'result');
+
+        console.log('API response created successfully');
         return result
     } catch (error) {
-        console.log(error, "error");
+        console.error('API route error:', error);
 
-
-        if (error instanceof Error && error.message?.includes("API key")) {
-            return new Response("Invalid or missing API key", {status: 401});
+        // 处理流式响应错误
+        if (error instanceof Error) {
+            if (error.message?.includes("API key")) {
+                return new Response("Invalid or missing API key", {status: 401});
+            }
+            if (error.message?.includes("pipe response")) {
+                return new Response("Stream processing error", {status: 500});
+            }
+            if (error.message?.includes("Maximum segments reached")) {
+                return new Response("Response too long", {status: 413});
+            }
         }
-        return new Response(String(error.message), {status: 500});
+
+        return new Response(
+            JSON.stringify({
+                error: "Internal server error",
+                message: error instanceof Error ? error.message : String(error)
+            }),
+            {
+                status: 500,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
     }
 }
 
