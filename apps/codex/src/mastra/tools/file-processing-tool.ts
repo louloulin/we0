@@ -5,7 +5,7 @@
  * Handles boltArtifact parsing and file content extraction
  */
 
-import { Tool } from '@mastra/core';
+import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { parseMessage, type ParsedMessage } from '../utils/message-parser';
 import { processFiles, type ProcessedFiles, type Message } from '../utils/file-processor';
@@ -13,7 +13,7 @@ import { processFiles, type ProcessedFiles, type Message } from '../utils/file-p
 /**
  * Tool for parsing boltArtifact content from messages
  */
-export const parseArtifactTool = new Tool({
+export const parseArtifactTool = createTool({
   id: 'parse-artifact',
   description: 'Parse boltArtifact tags from message content and extract file information',
   inputSchema: z.object({
@@ -40,7 +40,7 @@ export const parseArtifactTool = new Tool({
 /**
  * Tool for processing multiple messages and extracting all files
  */
-export const processMessagesTool = new Tool({
+export const processMessagesTool = createTool({
   id: 'process-messages',
   description: 'Process multiple messages to extract and combine all file content',
   inputSchema: z.object({
@@ -73,7 +73,7 @@ export const processMessagesTool = new Tool({
 /**
  * Tool for analyzing file structure and providing insights
  */
-export const analyzeFileStructureTool = new Tool({
+export const analyzeFileStructureTool = createTool({
   id: 'analyze-file-structure',
   description: 'Analyze file structure and provide project insights',
   inputSchema: z.object({
@@ -138,7 +138,7 @@ export const analyzeFileStructureTool = new Tool({
 /**
  * Tool for filtering files based on criteria
  */
-export const filterFilesTool = new Tool({
+export const filterFilesTool = createTool({
   id: 'filter-files',
   description: 'Filter files based on various criteria like extensions, patterns, or content type',
   inputSchema: z.object({
@@ -176,7 +176,7 @@ export const filterFilesTool = new Tool({
 /**
  * Tool for validating file content and structure
  */
-export const validateFilesTool = new Tool({
+export const validateFilesTool = createTool({
   id: 'validate-files',
   description: 'Validate file content and structure for potential issues',
   inputSchema: z.object({
@@ -218,7 +218,7 @@ export const validateFilesTool = new Tool({
 /**
  * Tool for generating file content summaries
  */
-export const summarizeFilesTool = new Tool({
+export const summarizeFilesTool = createTool({
   id: 'summarize-files',
   description: 'Generate summaries of file content for better understanding',
   inputSchema: z.object({

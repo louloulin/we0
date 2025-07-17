@@ -7,6 +7,8 @@ import { deepseekCodeGenerationWorkflow } from './workflows/deepseek-workflow';
 import { builderWorkflow } from './workflows/builder-workflow';
 import { chatWorkflow } from './workflows/chat-workflow';
 import { apiOptimizationWorkflow } from './workflows/api-optimization-workflow';
+import { approvalWorkflow } from './workflows/approval-workflow';
+import { eventDrivenWorkflow } from './workflows/event-driven-workflow';
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
 
@@ -62,6 +64,8 @@ export const mastra = new Mastra({
     builderWorkflow,
     chatWorkflow,
     apiOptimizationWorkflow,
+    approvalWorkflow,
+    eventDrivenWorkflow,
   },
   agents: {
     weatherAgent,

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "mastra-docs": {
+      "command": "npx",
+      "args": ["-y", "@mastra/mcp-docs-server"]
+    },
+    "codex-tools": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp-server.ts"]
+    }
+  }
+}
