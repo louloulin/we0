@@ -23,7 +23,7 @@ const NetworkStatusSchema = z.object({
  * POST /api/network/execute
  * Execute a task using Agent Network
  */
-export const networkExecuteRoute = registerApiRoute('/network/execute', {
+export const networkExecuteRoute = registerApiRoute('apix/network/execute', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -127,7 +127,7 @@ export const networkExecuteRoute = registerApiRoute('/network/execute', {
  * GET /api/network/status
  * Get Agent Network status and capabilities
  */
-export const networkStatusRoute = registerApiRoute('/network/status', {
+export const networkStatusRoute = registerApiRoute('/apix/network/status', {
   method: 'GET',
   handler: async (c) => {
     try {
@@ -174,7 +174,7 @@ export const networkStatusRoute = registerApiRoute('/network/status', {
  * GET /api/network/capabilities
  * Get detailed capabilities of the Agent Network
  */
-export const networkCapabilitiesRoute = registerApiRoute('/network/capabilities', {
+export const networkCapabilitiesRoute = registerApiRoute('/apix/network/capabilities', {
   method: 'GET',
   handler: async (c) => {
     try {
@@ -245,7 +245,7 @@ export const networkCapabilitiesRoute = registerApiRoute('/network/capabilities'
  * POST /api/network/batch
  * Execute multiple tasks in batch
  */
-export const networkBatchRoute = registerApiRoute('/network/batch', {
+export const networkBatchRoute = registerApiRoute('apix/network/batch', {
   method: 'POST',
   handler: async (c) => {
     try {

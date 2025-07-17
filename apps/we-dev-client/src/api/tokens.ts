@@ -8,7 +8,7 @@ interface TokenUsage {
 
 export async function getTokenUsage(token: string): Promise<TokenUsage | null> {
   try {
-    const response = await fetch(`${process.env.APP_BASE_URL}/api/tokens`, {
+    const response = await fetch(`${process.env.APP_BASE_URL}/apix/tokens`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

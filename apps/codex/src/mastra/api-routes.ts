@@ -23,7 +23,7 @@ const ChatRequestSchema = z.object({
   tools: z.array(z.any()).optional(),
 });
 
-export const chatApiRoute = registerApiRoute('/chat', {
+export const chatApiRoute = registerApiRoute('apix/chat', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -128,7 +128,7 @@ export const chatApiRoute = registerApiRoute('/chat', {
 });
 
 // Model Configuration API Route
-export const modelApiRoute = registerApiRoute('/model', {
+export const modelApiRoute = registerApiRoute('/apix/model', {
   method: 'POST',
   handler: async (c) => {
     const modelConfigs = [
@@ -201,7 +201,7 @@ export const modelApiRoute = registerApiRoute('/model', {
 });
 
 // Deploy API Route
-export const deployApiRoute = registerApiRoute('/deploy', {
+export const deployApiRoute = registerApiRoute('apix/deploy', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -279,7 +279,7 @@ export const deployApiRoute = registerApiRoute('/deploy', {
 });
 
 // Enhanced Prompt API Route
-export const enhancedPromptApiRoute = registerApiRoute('/enhancedPrompt', {
+export const enhancedPromptApiRoute = registerApiRoute('apix/enhancedPrompt', {
   method: 'POST',
   handler: async (c) => {
     try {

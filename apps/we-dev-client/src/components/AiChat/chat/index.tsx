@@ -147,7 +147,7 @@ export const BaseChat = ({uuid: propUuid}: { uuid?: string }) => {
 
     // 使用 ollama 模型 获取模型列表
     useEffect(() => {
-        fetch(`${API_BASE}/api/model`, {
+        fetch(`${API_BASE}/apix/model`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -344,7 +344,7 @@ export const BaseChat = ({uuid: propUuid}: { uuid?: string }) => {
         stop,
         reload,
     } = useChat({
-        api: `${baseChatUrl}/api/chat`,
+        api: `${baseChatUrl}/apix/chat`,
         headers: {
             ...(token && {Authorization: `Bearer ${token}`}),
         },

@@ -488,10 +488,10 @@ export const compareDatabaseOptionsTool = createTool({
         name: 'SQLite',
         scores: {
           'web-app': 7, 'api': 6, 'microservice': 8, 'mobile-backend': 5, 'analytics': 4,
-          low: 9, medium: 6, high: 3,
+          'traffic-low': 9, 'traffic-medium': 6, 'traffic-high': 3,
           simple: 9, moderate: 7, complex: 5,
           none: 10, horizontal: 2, vertical: 6, both: 2,
-          free: 10, low: 10, medium: 8, high: 6,
+          'budget-free': 10, 'budget-low': 10, 'budget-medium': 8, 'budget-high': 6,
           beginner: 9, intermediate: 8, expert: 7,
         },
         pros: ['Zero configuration', 'No server required', 'Fast for read-heavy workloads', 'ACID compliant', 'Cross-platform'],
@@ -503,10 +503,10 @@ export const compareDatabaseOptionsTool = createTool({
         name: 'MySQL',
         scores: {
           'web-app': 9, 'api': 8, 'microservice': 7, 'mobile-backend': 8, 'analytics': 7,
-          low: 8, medium: 9, high: 8,
+          'traffic-low': 8, 'traffic-medium': 9, 'traffic-high': 8,
           simple: 8, moderate: 9, complex: 8,
           none: 7, horizontal: 6, vertical: 8, both: 7,
-          free: 9, low: 9, medium: 9, high: 8,
+          'budget-free': 9, 'budget-low': 9, 'budget-medium': 9, 'budget-high': 8,
           beginner: 7, intermediate: 8, expert: 9,
         },
         pros: ['Mature and stable', 'Great performance', 'Wide community support', 'Good documentation', 'ACID compliant'],
@@ -518,10 +518,10 @@ export const compareDatabaseOptionsTool = createTool({
         name: 'PostgreSQL',
         scores: {
           'web-app': 9, 'api': 9, 'microservice': 8, 'mobile-backend': 8, 'analytics': 9,
-          low: 8, medium: 9, high: 9,
+          'traffic-low': 8, 'traffic-medium': 9, 'traffic-high': 9,
           simple: 7, moderate: 9, complex: 10,
           none: 7, horizontal: 7, vertical: 9, both: 8,
-          free: 10, low: 10, medium: 9, high: 9,
+          'budget-free': 10, 'budget-low': 10, 'budget-medium': 9, 'budget-high': 9,
           beginner: 6, intermediate: 8, expert: 10,
         },
         pros: ['Advanced features', 'Excellent JSON support', 'Strong consistency', 'Extensible', 'Open source'],
@@ -533,10 +533,10 @@ export const compareDatabaseOptionsTool = createTool({
         name: 'MongoDB',
         scores: {
           'web-app': 8, 'api': 9, 'microservice': 9, 'mobile-backend': 9, 'analytics': 8,
-          low: 7, medium: 8, high: 9,
+          'traffic-low': 7, 'traffic-medium': 8, 'traffic-high': 9,
           simple: 9, moderate: 8, complex: 7,
           none: 6, horizontal: 9, vertical: 7, both: 8,
-          free: 8, low: 7, medium: 8, high: 9,
+          'budget-free': 8, 'budget-low': 7, 'budget-medium': 8, 'budget-high': 9,
           beginner: 8, intermediate: 8, expert: 7,
         },
         pros: ['Flexible schema', 'Horizontal scaling', 'Great for JSON data', 'Fast development', 'Cloud-native'],
@@ -548,10 +548,10 @@ export const compareDatabaseOptionsTool = createTool({
         name: 'Redis',
         scores: {
           'web-app': 6, 'api': 7, 'microservice': 8, 'mobile-backend': 7, 'analytics': 5,
-          low: 8, medium: 9, high: 10,
+          'traffic-low': 8, 'traffic-medium': 9, 'traffic-high': 10,
           simple: 8, moderate: 7, complex: 6,
           none: 6, horizontal: 8, vertical: 9, both: 8,
-          free: 9, low: 8, medium: 8, high: 9,
+          'budget-free': 9, 'budget-low': 8, 'budget-medium': 8, 'budget-high': 9,
           beginner: 7, intermediate: 8, expert: 9,
         },
         pros: ['Extremely fast', 'Great for caching', 'Pub/sub support', 'Data structures', 'Session storage'],
@@ -564,10 +564,10 @@ export const compareDatabaseOptionsTool = createTool({
     const recommendations = databases.map(db => {
       const score = Math.round((
         db.scores[projectType] +
-        db.scores[expectedLoad] +
+        db.scores[`traffic-${expectedLoad}`] +
         db.scores[dataComplexity] +
         db.scores[scalabilityNeeds] +
-        db.scores[budget] +
+        db.scores[`budget-${budget}`] +
         db.scores[teamExperience]
       ) / 6);
 

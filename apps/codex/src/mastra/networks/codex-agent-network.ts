@@ -153,6 +153,15 @@ Provide clear, actionable responses with proper context and explanations.
     eventDrivenWorkflow,
   },
 
+  // Register key tools for the routing agent
+  tools: {
+    captureScreenshotTool,
+    countTokensTool,
+    parseArtifactTool,
+    generateMySQLPromptTool,
+    jsonToZodTool,
+  },
+
   // Memory for context-aware routing
   memory: createAgentNetworkMemory(),
 });

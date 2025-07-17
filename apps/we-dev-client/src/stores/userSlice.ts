@@ -101,7 +101,7 @@ const useUserStore = create<UserState>()(
               localStorage.removeItem("token")
               localStorage.removeItem("rememberMe")
               localStorage.removeItem("user-storage")
-              fetch("/api/logout");
+              fetch("/apix/logout");
               document.cookie =
               "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure=true;";
               set(() => ({
