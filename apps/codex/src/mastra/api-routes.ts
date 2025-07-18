@@ -25,7 +25,14 @@ function convertMastraStreamToAISDK(mastraStream: any) {
           accumulatedText += chunk;
 
           // AI SDK格式：文本块使用 0: 前缀
-          const escapedChunk = chunk.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+          // 正确转义 XML 标签和特殊字符
+          const escapedChunk = chunk
+            .replace(/\\/g, '\\\\')  // 转义反斜杠
+            .replace(/"/g, '\\"')    // 转义双引号
+            .replace(/\n/g, '\\n')   // 转义换行符
+            .replace(/\r/g, '\\r')   // 转义回车符
+            .replace(/\t/g, '\\t');  // 转义制表符
+
           const chunkData = `0:"${escapedChunk}"\n`;
           controller.enqueue(encoder.encode(chunkData));
         }
@@ -58,6 +65,145 @@ function convertMastraStreamToAISDK(mastraStream: any) {
   });
 }
 
+/**
+ * Build system prompt for Mastra with boltArtifact instructions
+ * Compatible with we-dev-next format requirements
+ */
+function buildSystemPromptForMastra(
+  projectType: 'miniProgram' | 'web' | 'backend' | 'other',
+  otherConfig: any,
+  fileContextPrompt: string = ''
+): string {
+  const baseInstructions = `You are We0 AI, an expert AI assistant and exceptional senior software developer with vast knowledge across multiple programming languages, frameworks, and best practices.
+
+CRITICAL OUTPUT FORMAT REQUIREMENTS:
+
+When modifying code or creating files, you MUST use the following XML format:
+
+<boltArtifact id="unique-id" title="Descriptive Title">
+  <boltAction type="file" filePath="path/to/file.ext">
+    // Complete file content here - NO PLACEHOLDERS
+  </boltAction>
+  <boltAction type="file" filePath="another/file.ext">
+    // Complete file content here - NO PLACEHOLDERS
+  </boltAction>
+</boltArtifact>
+
+IMPORTANT RULES:
+1. ALWAYS wrap file content in <boltArtifact> tags
+2. Each file must be in a separate <boltAction type="file" filePath="..."> tag
+3. Include COMPLETE file content, never use placeholders like "// rest of code..."
+4. Use relative file paths
+5. Do NOT use markdown code blocks for files
+6. Output must be XML format, not markdown!
+7. The filePath should be relative to the current working directory
+
+Examples:
+<boltArtifact id="react-component" title="React Todo Component">
+  <boltAction type="file" filePath="src/components/Todo.jsx">
+import React, { useState } from 'react';
+
+export default function Todo() {
+  const [todos, setTodos] = useState([]);
+  const [input, setInput] = useState('');
+
+  const addTodo = () => {
+    if (input.trim()) {
+      setTodos([...todos, { id: Date.now(), text: input, completed: false }]);
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="todo-container">
+      <h1>Todo List</h1>
+      <div>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Add a todo..."
+        />
+        <button onClick={addTodo}>Add</button>
+      </div>
+      <ul>
+        {todos.map(todo => (
+          <li key={todo.id}>{todo.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+  </boltAction>
+  <boltAction type="file" filePath="src/styles/Todo.css">
+.todo-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.todo-container h1 {
+  color: #333;
+  text-align: center;
+}
+
+.todo-container input {
+  padding: 8px;
+  margin-right: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.todo-container button {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+  </boltAction>
+</boltArtifact>`;
+
+  // Add project-specific instructions
+  let projectSpecificInstructions = '';
+
+  if (projectType === 'miniProgram') {
+    projectSpecificInstructions = `
+MINI PROGRAM SPECIFIC REQUIREMENTS:
+- For any place that uses images, implement using weui's icon library
+- Usage example: <we-icon type="field" icon="add" color="black" size="{{24}}"></we-icon>
+- Size must be 24px
+- Available icons: add, delete, search, home, setting, etc.
+- If images need to be used, write /components/weicon/index in the current directory's .json file
+- If the mini program needs a tabbar, generate a custom bottom tabbar component custom-tab-bar`;
+  } else if (projectType === 'web') {
+    projectSpecificInstructions = `
+WEB PROJECT REQUIREMENTS:
+- If you are a react project, you must use import React from 'react' to introduce react
+- Use modern ES6+ syntax and best practices
+- Ensure responsive design principles`;
+  }
+
+  if (otherConfig?.isBackEnd) {
+    projectSpecificInstructions += `
+BACKEND REQUIREMENTS:
+- You must generate backend code, do not only generate frontend code
+- Backend must handle CORS for all domains
+- Use localhost for backend address, do not use remote ip addresses
+- Connect frontend to backend, abstract frontend-backend interface connections into an api.js
+- Separate frontend and backend files, put frontend files under src, backend files in backend directory`;
+  }
+
+  // Combine all parts
+  let fullPrompt = baseInstructions + projectSpecificInstructions;
+
+  if (fileContextPrompt) {
+    fullPrompt = fileContextPrompt + '\n\n' + fullPrompt;
+  }
+
+  return fullPrompt;
+}
+
 // Chat API Route
 const ChatRequestSchema = z.object({
   messages: z.array(z.object({
@@ -88,7 +234,7 @@ export const chatApiRoute = registerApiRoute('apix/chat', {
       const { AgentFactory } = await import('./agents/multi-model-agent');
 
       // Check if streaming is requested
-      const isStreaming = c.req.header('Accept')?.includes('text/event-stream') ||
+      const isStreaming = true || c.req.header('Accept')?.includes('text/event-stream') ||
                          c.req.query('stream') === 'true';
 
       // Route to appropriate handler based on mode
@@ -359,7 +505,7 @@ async function handleChatMode(
   }
 }
 
-// Builder mode handler with proper Mastra streaming
+// Builder mode handler with proper Mastra streaming and file processing
 async function handleBuilderMode(
   messages: any[],
   model: string,
@@ -371,18 +517,65 @@ async function handleBuilderMode(
 ) {
   const { AgentFactory } = await import('./agents/multi-model-agent');
 
-  // Determine the best model for the task
+  // 1. Process files from messages (similar to we-dev-next)
+  const { processFiles, determineProjectType, estimateTokens } = await import('./utils/file-processor');
+  const { files, allContent } = processFiles(messages);
+
+  // 2. Handle URL screenshots (if needed)
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage.role === 'user' && lastMessage.content.startsWith('#')) {
+    const urlMatch = lastMessage.content.match(/https?:\/\/[^\s]+/);
+    if (urlMatch) {
+      try {
+        // Note: Screenshot functionality would need to be implemented
+        console.log('URL detected for screenshot:', urlMatch[0]);
+      } catch (error) {
+        console.error('Screenshot capture failed:', error);
+      }
+    }
+  }
+
+  // 3. Determine project type and file structure
+  const filesPath = Object.keys(files);
+  let nowFiles = files;
+  const projectType = determineProjectType(files);
+
+  // 4. Build system prompt with file context
+  let systemPrompt = '';
+  let fileContextPrompt = '';
+
+  if (estimateTokens(allContent) > 128000) {
+    // Handle large file content - simplified version
+    const { filterFiles } = await import('./utils/file-processor');
+    nowFiles = filterFiles(files, { codeOnly: true });
+    fileContextPrompt = `Current file directory tree: ${filesPath.join("\n")}\n\nCurrent requirement file contents:\n${JSON.stringify(nowFiles)}`;
+  } else if (filesPath.length > 0) {
+    fileContextPrompt = `Current file directory tree: ${filesPath.join("\n")}\n\nCurrent requirement file contents:\n${JSON.stringify(nowFiles)}`;
+  }
+
+  // 5. Build complete system prompt with boltArtifact instructions
+  systemPrompt = buildSystemPromptForMastra(projectType, otherConfig, fileContextPrompt);
+
+  // 6. Determine the best model for the task
   let selectedModel = model;
   if (otherConfig?.type === 'miniProgram' || otherConfig?.isBackEnd) {
-    // For complex coding tasks, use the best coding model
     selectedModel = AgentFactory.getBestModelForTask('coding');
   }
 
-  // Create a builder agent with the selected model
+  // 7. Create a builder agent with the selected model
   const builderAgent = AgentFactory.createBuilderAgent(selectedModel);
 
-  // Convert messages to Mastra format
-  const mastraMessages = messages.map(msg => ({
+  // 8. Modify the last message to include system prompt and format instructions
+  const modifiedMessages = [...messages];
+  modifiedMessages[modifiedMessages.length - 1] = {
+    ...lastMessage,
+    content: systemPrompt +
+      '\n\nIMPORTANT: When writing code, do not give me markdown, output must be XML format using boltArtifact tags!! Emphasis! My question is: ' +
+      lastMessage.content
+  };
+
+  // 9. Convert messages to Mastra format
+  const mastraMessages = modifiedMessages.map(msg => ({
     role: msg.role,
     content: msg.content,
   }));

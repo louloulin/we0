@@ -304,8 +304,23 @@ export function validateFiles(files: Record<string, string>) {
 }
 
 /**
+ * Estimates the number of tokens in a text string
+ * Simple approximation: ~4 characters per token
+ *
+ * @param text - The text to estimate tokens for
+ * @returns Estimated token count
+ */
+export function estimateTokens(text: string): number {
+  if (!text) return 0;
+  // Simple approximation: roughly 4 characters per token
+  return Math.ceil(text.length / 4);
+}
+
+
+
+/**
  * Merges multiple ProcessedFiles objects
- * 
+ *
  * @param processedFilesArray - Array of ProcessedFiles to merge
  * @returns Merged ProcessedFiles object
  */
@@ -314,20 +329,20 @@ export function mergeProcessedFiles(processedFilesArray: ProcessedFiles[]): Proc
   const allContents: string[] = [];
   let totalSize = 0;
   let fileCount = 0;
-  
+
   for (const processed of processedFilesArray) {
     // Merge files (later files override earlier ones with same path)
     Object.assign(mergedFiles, processed.files);
-    
+
     // Combine content
     if (processed.allContent) {
       allContents.push(processed.allContent);
     }
-    
+
     totalSize += processed.totalSize;
     fileCount += processed.fileCount;
   }
-  
+
   return {
     files: mergedFiles,
     allContent: allContents.join('\n\n'),
