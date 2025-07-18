@@ -2,19 +2,43 @@
 
 ## 🔍 全面项目分析与新架构设计
 
-### 1. 当前项目状态深度分析 ✅
+### 1. 三大系统深度分析 ✅
 
-#### 1.1 codex - 智能编程 API 核心 🧠
-**基于 Mastra vNext 的完整后端实现**:
-- ✅ **Mastra vNext Agent Network**: 完整的多智能体协作系统
-- ✅ **智能编程网络**: intelligent-coding-network (5个专业角色)
-- ✅ **智能任务路由**: 根据复杂度自动选择处理方式
-- ✅ **专业角色分工**: 需求分析师、架构师、高级开发工程师、代码审查员、文档专家
-- ✅ **20+ 专业工具**: 文件处理、代码生成、文档生成等
-- ✅ **流式 API**: 完整的 AI SDK 兼容流式响应 (已验证工作)
-- ✅ **Memory 系统**: LibSQL 存储的上下文记忆
-- ✅ **质量保证体系**: 多层验证和审查机制
-- ✅ **API 兼容性**: 与标准 AI SDK 格式完全兼容
+#### 1.1 MastraCode - XML标签工具调用系统 🏷️
+**基于1133行tag.md的完整工具调用框架**:
+- ✅ **XML标签系统**: 完整的工具调用规范（apply_diff, read_file, write_file等）
+- ✅ **多步骤工作流**: 支持复杂的多步骤任务执行
+- ✅ **错误处理机制**: 完善的调试和错误恢复
+- ✅ **浏览器自动化**: 集成Playwright进行网页操作
+- ✅ **MCP协议支持**: Model Context Protocol集成
+- ❌ **性能问题**: XML解析消耗大量token，建议迁移到JSON
+- ❌ **扩展性限制**: 标签结构固定，难以添加新功能
+
+#### 1.2 we-dev-next - boltArtifact代码生成系统 🔧
+**基于546行提示词的结构化代码输出**:
+- ✅ **boltArtifact标签**: 结构化的项目生成格式
+- ✅ **多模型支持**: Claude 3.5 Sonnet、GPT-4、DeepSeek
+- ✅ **WebContainer环境**: 浏览器内完整开发环境支持
+- ✅ **流式响应**: 实时代码生成和反馈
+- ✅ **多语言后端**: Java/Node/Go/Python策略模式
+- ❌ **提示词冗长**: 546行单一提示词影响效果
+- ❌ **中英文混合**: 影响AI模型理解准确性
+- ❌ **缺乏专业化**: 没有专门的智能体分工
+
+#### 1.3 we-dev-client - 完整前端 IDE 🎨
+**基于现代技术栈的桌面级 IDE**:
+- ✅ **完整 IDE 界面**: VS Code 风格的专业界面 (WeIde 组件)
+- ✅ **CodeMirror 编辑器**: 多语言语法高亮和智能补全
+- ✅ **WebContainer 集成**: 浏览器内完整开发环境
+- ✅ **文件管理系统**: 完整的文件树和 CRUD 操作
+- ✅ **终端模拟器**: xterm.js 多终端支持
+- ✅ **AI 聊天界面**: 完整的对话式编程界面 (AiChat 组件)
+- ✅ **实时预览**: iframe 预览和热重载
+- ✅ **项目管理**: 项目创建、模板、依赖管理
+- ✅ **Electron 桌面应用**: 跨平台桌面支持
+- ✅ **MCP 集成**: 模型上下文协议支持
+- ✅ **状态管理**: Zustand 状态管理系统
+- ❌ **缺乏深度AI集成**: 主要是UI层，缺乏智能编程能力
 
 #### 1.2 we-dev-client - 完整前端 IDE 🎨
 **基于现代技术栈的桌面级 IDE**:
@@ -30,25 +54,138 @@
 - ✅ **MCP 集成**: 模型上下文协议支持
 - ✅ **状态管理**: Zustand 状态管理系统
 
-### 2. 基于 Mastra Client 的新架构设计 🚀
+### 2. 基于 Mastra 的统一架构设计 🚀
 
-#### 2.1 Mastra Client 集成优势 📡
-**根据 Mastra 官方文档分析**:
-- ✅ **原生 TypeScript 支持**: 完整的类型安全
-- ✅ **统一 API 接口**: 标准化的智能体调用方式
-- ✅ **流式响应支持**: 原生支持实时流式交互
-- ✅ **错误处理机制**: 完善的错误处理和重试机制
-- ✅ **多智能体管理**: 统一管理多个智能体实例
-- ✅ **内存和上下文**: 自动处理智能体记忆和上下文
+#### 2.1 核心架构整合策略 📡
+**整合三大系统优势的统一方案**:
+- 🔧 **工具调用系统**: 将MastraCode的XML标签迁移为JSON格式，提升性能
+- 🎯 **代码生成能力**: 继承we-dev-next的boltArtifact系统和多模型支持
+- 🎨 **完整IDE体验**: 基于we-dev-client的成熟界面和WebContainer集成
+- 📡 **Mastra框架**: 使用Mastra Agent Network作为核心智能体框架
+- 🧠 **多智能体协作**: 实现专业化分工的智能体团队
+- 🔄 **统一通信协议**: JSON格式的工具调用和流式响应
 
-#### 2.2 MetaGPT 多智能体架构集成 🧠
-**基于 MetaGPT 论文的核心设计**:
-- 🎯 **标准化操作流程 (SOPs)**: 模拟真实软件开发团队
-- 👥 **专业角色分工**: 产品经理、架构师、工程师、QA工程师、项目经理
-- 📋 **结构化通信**: 通过文档和图表而非对话进行协作
-- 🔄 **发布-订阅机制**: 高效的信息共享和任务协调
-- 🔧 **可执行反馈**: 代码执行和调试的自我修正机制
-- 📊 **质量保证**: 多层次的代码审查和验证
+#### 2.2 TagX增强XML指令体系 🏷️
+**保持XML优势，融合多系统最佳实践**:
+
+基于对Claude Code、Augment Code、Cursor、MastraCode的深度分析，我们设计了TagX指令体系，保持XML的结构化优势：
+
+```xml
+<!-- 智能代码生成 -->
+<smart_code_gen>
+<task>Create a user authentication system</task>
+<context>
+  <project_type>react-typescript</project_type>
+  <existing_files>
+    <file>src/types/user.ts</file>
+    <file>src/utils/api.ts</file>
+  </existing_files>
+  <requirements>
+    <security>high</security>
+    <accessibility>wcag-aa</accessibility>
+    <testing>comprehensive</testing>
+  </requirements>
+</context>
+<agents>
+  <primary>senior-developer</primary>
+  <reviewers>
+    <agent>security-auditor</agent>
+    <agent>code-reviewer</agent>
+  </reviewers>
+</agents>
+<output>
+  <include_tests>true</include_tests>
+  <include_docs>true</include_docs>
+  <include_types>true</include_types>
+</output>
+</smart_code_gen>
+
+<!-- 增强的boltArtifact -->
+<bolt_artifact id="enhanced-project" title="增强项目生成">
+<meta>
+  <version>2.0</version>
+  <agent>code-generator</agent>
+  <quality_score>0.95</quality_score>
+</meta>
+<environment>
+  <type>webcontainer</type>
+  <constraints>
+    <no_native_binaries>true</no_native_binaries>
+    <python_stdlib_only>true</python_stdlib_only>
+  </constraints>
+</environment>
+<actions>
+  <bolt_action type="file" path="package.json" priority="1">
+    <content>...</content>
+    <validation>
+      <syntax_check>true</syntax_check>
+      <dependency_check>true</dependency_check>
+    </validation>
+  </bolt_action>
+</actions>
+</bolt_artifact>
+```
+
+**TagX核心优势**:
+- ✅ **结构化清晰**: XML标签提供明确的语义边界
+- ✅ **人类可读**: 开发者可以直观理解指令含义
+- ✅ **多系统融合**: 整合Claude Code、Cursor、Augment Code优势
+- ✅ **智能化增强**: 支持多智能体协作和质量保证
+- ✅ **扩展性强**: 易于添加新属性和嵌套结构
+
+#### 2.3 增强的多智能体架构 🧠
+**基于Mastra Agent Network的专业化智能体团队**:
+
+##### 核心智能体设计
+```typescript
+// 1. 主控智能体 (Coordinator Agent)
+class CoordinatorAgent extends MastraAgent {
+  name = "coordinator";
+  description = "任务分析和智能体协调";
+
+  async execute(task: Task): Promise<Result> {
+    const analysis = await this.analyzeTask(task);
+    const agents = this.selectAgents(analysis);
+    const workflow = this.createWorkflow(agents, task);
+    return this.executeWorkflow(workflow);
+  }
+}
+
+// 2. 代码生成智能体 (继承we-dev-next能力)
+class CodeGeneratorAgent extends MastraAgent {
+  name = "code-generator";
+  description = "高质量代码生成，支持boltArtifact格式";
+
+  tools = [
+    "create_project",
+    "generate_component",
+    "apply_diff",
+    "manage_dependencies"
+  ];
+
+  // 继承we-dev-next的boltArtifact系统
+  outputFormat = "boltArtifact";
+}
+
+// 3. 代码分析智能体 (新增能力)
+class CodeAnalyzerAgent extends MastraAgent {
+  name = "code-analyzer";
+  description = "深度代码分析和架构建议";
+
+  tools = [
+    "analyze_code_quality",
+    "detect_patterns",
+    "suggest_refactoring",
+    "performance_analysis"
+  ];
+}
+```
+
+##### 智能体协作流程
+- 🎯 **任务路由**: 根据请求类型自动选择最适合的智能体
+- � **工作流编排**: 多智能体按序或并行执行复杂任务
+- 📊 **质量控制**: 每个输出都经过质量检查和验证
+- 🧠 **上下文共享**: 智能体间共享项目上下文和历史记录
 
 #### 2.3 与 Cursor 的全面对比 🎯
 
@@ -1950,3 +2087,411 @@ export const MetaGPTWorkflow: React.FC = () => {
 **🎉 通过 Mastra Client + MetaGPT 架构，我们将创造一个真正革命性的智能编程助手，在技术架构、用户体验和功能完整性上全面超越 Cursor！**
 
 **立即开始执行，8-12天内交付下一代 AI IDE！** 🚀
+
+---
+
+## 🏷️ TagX指令体系核心优势
+
+### 1. 多系统融合的最佳实践
+
+#### 1.1 Claude Code集成
+- **智能代码分析**: 集成Claude的深度代码理解能力
+- **上下文感知重构**: 基于项目全局上下文的智能重构
+- **自然语言交互**: 支持自然语言描述的代码生成需求
+
+#### 1.2 Augment Code企业级能力
+- **代码质量保证**: 企业级的代码质量检查和标准
+- **安全审计**: 内置OWASP安全检查和漏洞扫描
+- **合规性检查**: 支持各种编码规范和合规要求
+
+#### 1.3 Cursor实时协作
+- **实时代码补全**: 基于上下文的智能代码补全
+- **协作编程**: 多人实时协作编程支持
+- **增量更新**: 高效的增量代码更新机制
+
+#### 1.4 MastraCode工具调用框架
+- **完整工具集**: 继承MastraCode的20+专业工具
+- **错误处理**: 完善的错误处理和恢复机制
+- **浏览器自动化**: 集成Playwright的网页操作能力
+
+### 2. TagX指令体系架构优势
+
+#### 2.1 结构化指令设计
+```xml
+<!-- 示例：智能项目生成 -->
+<generate_project>
+<template>react-typescript</template>
+<features>
+  <feature>authentication</feature>
+  <feature>testing</feature>
+  <feature>deployment</feature>
+</features>
+<quality_level>production</quality_level>
+<agents>
+  <primary>senior-developer</primary>
+  <reviewers>
+    <agent>security-auditor</agent>
+    <agent>code-reviewer</agent>
+  </reviewers>
+</agents>
+</generate_project>
+```
+
+#### 2.2 多智能体协作支持
+```xml
+<!-- 智能体工作流编排 -->
+<agent_workflow>
+<task>Build complete authentication system</task>
+<workflow>
+  <stage name="analysis" agent="product-manager">
+    <output>Product Requirements Document</output>
+  </stage>
+  <stage name="design" agent="architect" depends_on="analysis">
+    <output>System architecture design</output>
+  </stage>
+  <stage name="implementation" agent="senior-developer" depends_on="design">
+    <output>Complete code implementation</output>
+    <parallel>
+      <subtask agent="frontend-specialist">UI components</subtask>
+      <subtask agent="backend-specialist">API endpoints</subtask>
+    </parallel>
+  </stage>
+  <stage name="testing" agent="qa-engineer" depends_on="implementation">
+    <output>Comprehensive test suite</output>
+  </stage>
+</workflow>
+<quality_gates>
+  <gate stage="implementation">
+    <criteria>code_coverage >= 80%</criteria>
+    <criteria>security_score >= 90%</criteria>
+  </gate>
+</quality_gates>
+</agent_workflow>
+```
+
+#### 2.3 质量保证集成
+```xml
+<!-- 自动化质量检查 -->
+<quality_check>
+<scope>
+  <files>
+    <pattern>src/**/*.{ts,tsx}</pattern>
+  </files>
+</scope>
+<checks>
+  <static_analysis>
+    <tool>eslint</tool>
+    <tool>typescript</tool>
+    <tool>sonarjs</tool>
+  </static_analysis>
+  <security>
+    <tool>semgrep</tool>
+    <custom_rules>owasp-top10</custom_rules>
+  </security>
+  <performance>
+    <bundle_analysis>true</bundle_analysis>
+    <memory_leaks>true</memory_leaks>
+  </performance>
+</checks>
+<thresholds>
+  <code_coverage>80%</code_coverage>
+  <security_score>90%</security_score>
+</thresholds>
+</quality_check>
+```
+
+### 3. 与竞品的全面对比
+
+| 特性维度 | TagX系统 | Claude Code | Cursor | Augment Code | 优势说明 |
+|----------|----------|-------------|--------|--------------|----------|
+| **指令体系** | ✅ 结构化XML标签 | ❌ 自然语言 | ❌ 简单命令 | ❌ 传统API | 明确语义边界 |
+| **多智能体** | ✅ 工作流编排 | ❌ 单一AI | ❌ 单一AI | ❌ 单一AI | 专业团队协作 |
+| **质量保证** | ✅ 多维度检查 | ⚠️ 基础检查 | ⚠️ 基础检查 | ✅ 企业级 | 全面质量控制 |
+| **项目理解** | ✅ 全项目分析 | ✅ 深度理解 | ⚠️ 有限上下文 | ✅ 代码库级别 | 最佳项目洞察 |
+| **实时协作** | ✅ 多人协作 | ❌ 单人使用 | ✅ 实时编辑 | ✅ 团队协作 | 完整协作体验 |
+| **部署集成** | ✅ 全流程支持 | ❌ 代码生成为主 | ❌ 编辑器功能 | ⚠️ 有限支持 | 端到端解决方案 |
+| **扩展性** | ✅ 标签化扩展 | ⚠️ 模型限制 | ⚠️ 插件系统 | ✅ API扩展 | 最佳扩展能力 |
+
+### 4. TagX实施策略
+
+#### 4.1 渐进式实施
+1. **Phase 1**: 核心标签实现（项目生成、代码编辑）
+2. **Phase 2**: 智能体协作（多智能体工作流）
+3. **Phase 3**: 质量保证（自动化测试、安全检查）
+4. **Phase 4**: 部署运维（CI/CD、监控）
+
+#### 4.2 向后兼容
+- 保持对MastraCode原有XML标签的支持
+- 提供标签迁移工具和指南
+- 逐步引入新的TagX增强功能
+
+#### 4.3 性能优化
+- 智能标签解析缓存
+- 并行智能体执行
+- 增量更新机制
+- 资源池管理
+
+---
+
+## 📋 基于优先级的详细TODO列表
+
+### 🔥 P0 - 核心框架搭建 (第1-3天) - 必须完成
+
+#### Day 1: 环境准备和TagX指令体系
+- [ ] **1.1 项目结构初始化**
+  - [ ] 创建统一的Monorepo结构
+  - [ ] 配置TypeScript和构建工具
+  - [ ] 设置开发环境和依赖管理
+  - 预计时间: 2小时
+
+- [ ] **1.2 Mastra Agent框架搭建**
+  - [ ] 安装和配置Mastra核心依赖
+  - [ ] 创建基础Agent接口和抽象类
+  - [ ] 实现智能体注册和发现机制
+  - 预计时间: 4小时
+
+- [ ] **1.3 TagX指令解析系统**
+  - [ ] 实现TagX XML指令解析器
+  - [ ] 集成MastraCode的工具调用能力
+  - [ ] 添加智能化增强和多智能体支持
+  - [ ] 创建指令验证和错误处理机制
+  - 预计时间: 2小时
+
+#### Day 2: 核心智能体实现
+- [ ] **2.1 主控智能体开发**
+  - [ ] 实现CoordinatorAgent类
+  - [ ] 添加任务分析和智能体选择逻辑
+  - [ ] 实现基于TagX的工作流编排机制
+  - [ ] 集成`<agent_workflow>`标签支持
+  - 预计时间: 4小时
+
+- [ ] **2.2 增强代码生成智能体**
+  - [ ] 从we-dev-next迁移boltArtifact系统
+  - [ ] 实现`<smart_code_gen>`和`<bolt_artifact>`标签
+  - [ ] 集成多智能体协作和质量检查
+  - [ ] 保持多模型支持（Claude、GPT-4、DeepSeek）
+  - 预计时间: 4小时
+
+#### Day 3: 前端集成和TagX支持
+- [ ] **3.1 we-dev-client TagX集成**
+  - [ ] 安装@mastra/client-js依赖
+  - [ ] 创建TagX指令解析和发送服务
+  - [ ] 实现智能体通信接口
+  - [ ] 集成`<agent_message>`标签支持
+  - 预计时间: 3小时
+
+- [ ] **3.2 多智能体UI组件**
+  - [ ] 实现智能体工作流可视化界面
+  - [ ] 创建基于`<agent_workflow>`的进度显示
+  - [ ] 添加智能体状态监控面板
+  - [ ] 集成质量检查结果显示
+  - 预计时间: 3小时
+
+- [ ] **3.3 TagX功能验证**
+  - [ ] 测试`<smart_code_gen>`标签调用
+  - [ ] 验证`<bolt_artifact>`项目生成
+  - [ ] 测试多智能体协作流程
+  - [ ] 确保前后端TagX通信正常
+  - 预计时间: 2小时
+
+### ⚡ P1 - 专业智能体开发 (第4-6天) - 高优先级
+
+#### Day 4: 智能代码分析和质量保证
+- [ ] **4.1 智能代码分析实现**
+  - [ ] 实现`<code_review>`标签支持
+  - [ ] 集成`<quality_check>`多维度检查
+  - [ ] 添加安全、性能、可访问性分析
+  - [ ] 实现智能重构建议`<smart_refactor>`
+  - 预计时间: 4小时
+
+- [ ] **4.2 自动化质量保证**
+  - [ ] 实现`<generate_tests>`自动测试生成
+  - [ ] 集成多种测试框架支持
+  - [ ] 添加代码覆盖率和质量阈值检查
+  - [ ] 实现持续质量监控
+  - 预计时间: 4小时
+
+#### Day 5: 测试智能体
+- [ ] **5.1 TestGeneratorAgent实现**
+  - [ ] 实现自动化测试生成
+  - [ ] 支持多种测试框架（Jest、Vitest、Cypress）
+  - [ ] 实现测试覆盖率分析
+  - 预计时间: 4小时
+
+- [ ] **5.2 测试执行引擎**
+  - [ ] 集成WebContainer测试执行
+  - [ ] 实现测试结果分析和报告
+  - [ ] 添加测试失败的自动修复建议
+  - 预计时间: 4小时
+
+#### Day 6: 安全和文档智能体
+- [ ] **6.1 SecurityAuditorAgent实现**
+  - [ ] 实现安全漏洞扫描
+  - [ ] 集成OWASP安全检查
+  - [ ] 实现依赖安全分析
+  - 预计时间: 3小时
+
+- [ ] **6.2 DocumentationAgent实现**
+  - [ ] 实现API文档自动生成
+  - [ ] 支持多种文档格式（Markdown、JSDoc）
+  - [ ] 集成代码注释优化
+  - 预计时间: 3小时
+
+- [ ] **6.3 智能体协作测试**
+  - [ ] 测试多智能体协作流程
+  - [ ] 验证工作流编排机制
+  - [ ] 优化智能体间通信性能
+  - 预计时间: 2小时
+
+### 🎯 P2 - 用户界面和体验优化 (第7-9天) - 中优先级
+
+#### Day 7: 前端界面集成
+- [ ] **7.1 多智能体界面实现**
+  - [ ] 实现智能体状态面板
+  - [ ] 创建工作流进度可视化
+  - [ ] 添加智能体性能监控界面
+  - 预计时间: 4小时
+
+- [ ] **7.2 代码编辑器AI增强**
+  - [ ] 为CodeMirror添加AI代码补全
+  - [ ] 实现实时代码分析和建议
+  - [ ] 集成智能重构功能
+  - 预计时间: 4小时
+
+#### Day 8: 项目管理功能
+- [ ] **8.1 项目级AI分析**
+  - [ ] 实现完整项目结构分析
+  - [ ] 添加项目健康度评估
+  - [ ] 实现技术债务检测
+  - 预计时间: 4小时
+
+- [ ] **8.2 智能项目模板**
+  - [ ] 创建AI驱动的项目模板生成
+  - [ ] 实现基于需求的技术栈推荐
+  - [ ] 添加项目配置自动化
+  - 预计时间: 4小时
+
+#### Day 9: 协作和部署功能
+- [ ] **9.1 实时协作系统**
+  - [ ] 实现多用户实时编辑
+  - [ ] 添加智能冲突解决
+  - [ ] 集成版本控制支持
+  - 预计时间: 4小时
+
+- [ ] **9.2 部署智能体**
+  - [ ] 实现DeploymentAgent
+  - [ ] 支持多种云平台部署
+  - [ ] 集成CI/CD流水线生成
+  - 预计时间: 4小时
+
+### 🔧 P3 - 性能优化和完善 (第10-12天) - 低优先级
+
+#### Day 10: 性能优化
+- [ ] **10.1 系统性能优化**
+  - [ ] 优化智能体调用性能
+  - [ ] 实现智能缓存机制
+  - [ ] 优化前端渲染性能
+  - 预计时间: 4小时
+
+- [ ] **10.2 内存和资源管理**
+  - [ ] 优化内存使用
+  - [ ] 实现资源回收机制
+  - [ ] 添加性能监控和告警
+  - 预计时间: 4小时
+
+#### Day 11: 用户体验完善
+- [ ] **11.1 界面优化**
+  - [ ] 优化UI/UX设计
+  - [ ] 添加快捷键支持
+  - [ ] 实现主题和个性化设置
+  - 预计时间: 4小时
+
+- [ ] **11.2 错误处理和用户反馈**
+  - [ ] 完善错误处理机制
+  - [ ] 添加用户反馈系统
+  - [ ] 实现智能错误恢复
+  - 预计时间: 4小时
+
+#### Day 12: 测试和部署
+- [ ] **12.1 全面测试**
+  - [ ] 单元测试覆盖率达到80%+
+  - [ ] 集成测试和端到端测试
+  - [ ] 性能测试和压力测试
+  - 预计时间: 4小时
+
+- [ ] **12.2 生产部署准备**
+  - [ ] 配置生产环境
+  - [ ] 实现监控和日志系统
+  - [ ] 准备用户文档和教程
+  - 预计时间: 4小时
+
+### 📊 基于TagX的优先级决策矩阵
+
+| 功能模块 | 重要性 | 紧急性 | 技术难度 | 用户价值 | TagX集成度 | 优先级 |
+|---------|--------|--------|----------|----------|------------|--------|
+| Mastra Agent框架 | 高 | 高 | 中 | 高 | 高 | P0 |
+| TagX指令解析系统 | 高 | 高 | 中 | 高 | 核心 | P0 |
+| 智能代码生成(`<smart_code_gen>`) | 高 | 高 | 低 | 高 | 高 | P0 |
+| 增强boltArtifact(`<bolt_artifact>`) | 高 | 高 | 低 | 高 | 高 | P0 |
+| 多智能体工作流(`<agent_workflow>`) | 高 | 中 | 中 | 高 | 核心 | P1 |
+| 质量检查系统(`<quality_check>`) | 高 | 中 | 中 | 高 | 高 | P1 |
+| 自动化测试(`<generate_tests>`) | 中 | 中 | 中 | 中 | 中 | P1 |
+| 安全审计(`<security_audit>`) | 中 | 低 | 中 | 中 | 中 | P1 |
+| 智能体协作界面 | 中 | 中 | 低 | 高 | 中 | P2 |
+| 部署配置(`<generate_deployment>`) | 低 | 低 | 中 | 低 | 中 | P2 |
+| CI/CD生成(`<generate_cicd>`) | 低 | 低 | 中 | 低 | 中 | P3 |
+| 性能优化和监控 | 中 | 低 | 中 | 中 | 低 | P3 |
+
+**TagX集成度说明**:
+- **核心**: TagX指令体系的核心组件，必须优先实现
+- **高**: 直接使用TagX标签，提供重要功能
+- **中**: 部分使用TagX标签，提供辅助功能
+- **低**: 间接受益于TagX体系，主要是优化类功能
+
+### 🎯 基于TagX的关键里程碑
+
+- **里程碑1 (Day 3)**: TagX指令体系基础完成
+  - ✅ TagX XML解析器实现
+  - ✅ 基础智能体调用(`<smart_code_gen>`)
+  - ✅ 增强boltArtifact支持(`<bolt_artifact>`)
+  - ✅ 前端TagX指令发送和接收
+
+- **里程碑2 (Day 6)**: 多智能体协作完成
+  - ✅ 智能体工作流编排(`<agent_workflow>`)
+  - ✅ 质量检查系统(`<quality_check>`)
+  - ✅ 自动化测试生成(`<generate_tests>`)
+  - ✅ 智能体间通信(`<agent_message>`)
+
+- **里程碑3 (Day 9)**: 完整开发工作流
+  - ✅ 项目级分析(`<analyze_project>`)
+  - ✅ 智能重构(`<smart_refactor>`)
+  - ✅ 批量文件操作(`<batch_file_ops>`)
+  - ✅ 用户界面完整集成
+
+- **里程碑4 (Day 12)**: 生产就绪系统
+  - ✅ 部署配置生成(`<generate_deployment>`)
+  - ✅ CI/CD流水线(`<generate_cicd>`)
+  - ✅ 性能优化和监控
+  - ✅ 完整的TagX指令体系支持
+
+### ⚠️ 风险评估和应对策略
+
+#### 高风险项目
+1. **Mastra Agent框架集成** (P0)
+   - 风险: 框架学习曲线陡峭
+   - 应对: 提前研究文档，准备备选方案
+
+2. **多智能体协作复杂性** (P1)
+   - 风险: 智能体间通信可能出现问题
+   - 应对: 简化初始设计，逐步增加复杂性
+
+3. **性能优化挑战** (P3)
+   - 风险: 多智能体调用可能影响响应速度
+   - 应对: 实现智能缓存和并行处理
+
+#### 应急计划
+- 如果Mastra集成遇到问题，可以先使用传统API调用方式
+- 如果多智能体协作复杂，可以先实现单智能体版本
+- 如果前端集成困难，可以先使用简单的Web界面
+
+这个详细的TODO列表确保了项目能够按优先级有序推进，在12天内交付一个功能完整、性能优秀的基于Mastra的智能编程助手。

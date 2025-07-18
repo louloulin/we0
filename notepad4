@@ -1,0 +1,58 @@
+基于当前的智能编程助手项目，执行以下具体的分析、实现和验证任务：
+
+### 1. 深度代码分析和技术研究
+- **MetaGPT 架构分析**：
+  - 使用 `view` 工具分析 `/Users/louloulin/Documents/linchong/code/we0/MetaGPT/metagpt/roles/` 目录下的核心角色实现
+  - 重点分析 `product_manager.py`, `architect.py`, `engineer.py` 等文件的角色定义模式
+  - 研究 `/Users/louloulin/Documents/linchong/code/we0/MetaGPT/metagpt/environment/` 下的多智能体协作环境
+  - 分析消息传递机制和工作流编排的具体实现代码
+
+- **Mastra 技术文档研究**：
+  - 使用 `web-search` 和 `web-fetch` 工具获取 https://mastra.ai/docs 的最新文档
+  - 重点研究 Mastra vNext Agent Network 的 API 使用方法
+  - 学习 `@mastra/client-js` 的集成方式和最佳实践
+  - 分析 Memory 系统、RuntimeContext 配置和工具集成的具体实现
+
+- **现有项目状态分析**：
+  - 分析 `/Users/louloulin/Documents/linchong/code/we0/apps/codex` 的当前 Mastra 智能体实现
+  - 分析 `/Users/louloulin/Documents/linchong/code/we0/apps/we-dev-client` 的前端架构和 API 调用方式
+  - 识别两个项目之间的集成点和兼容性
+
+### 2. 按照 plan6.md 实施具体功能
+根据 `/Users/louloulin/Documents/linchong/code/we0/plan6.md` 中的实施计划，按优先级顺序实现：
+
+**Phase 1: Mastra Client 集成 (立即开始)**
+- 在 we-dev-client 中安装和配置 `@mastra/client-js`
+- 创建 `IntelligentCodingClient` 类替换现有的 API 调用
+- 实现流式响应处理和错误管理机制
+
+**Phase 2: MetaGPT 界面重构**
+- 基于 MetaGPT 角色模式重构 AiChat 组件
+- 实现多智能体状态可视化界面
+- 添加工作流进度显示和智能体协作动画
+
+**Phase 3: 代码编辑器 AI 增强**
+- 集成 Mastra Client 到 CodeMirror 编辑器
+- 实现智能代码补全和实时建议
+- 添加项目级上下文分析功能
+
+### 3. 测试验证和质量保证
+对每个实现的功能进行全面测试：
+- **功能测试**：验证 Mastra Client 集成是否正常工作
+- **性能测试**：测试流式响应的延迟和稳定性
+- **用户体验测试**：验证 MetaGPT 界面的可用性和直观性
+- **集成测试**：确保 codex 后端和 we-dev-client 前端的完整协作
+
+### 4. 文档更新和进度跟踪
+- 在 plan6.md 中标记已完成的功能（使用 ✅ 标记）
+- 记录实现过程中遇到的问题和解决方案
+- 更新技术架构图和 API 文档
+- 添加性能基准测试结果
+
+### 5. 输出要求
+- 提供具体的代码实现和配置文件
+- 包含详细的测试结果和验证报告
+- 更新后的 plan6.md 文件，清晰标记实现进度
+- 下一阶段的具体行动建议
+
+请按照这个顺序逐步执行，每完成一个阶段就进行测试验证，确保质量后再进入下一阶段。
