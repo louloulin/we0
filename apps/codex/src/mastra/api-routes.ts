@@ -19,29 +19,168 @@ export function convertMastraStreamToAISDK(mastraStream: any) {
         controller.enqueue(encoder.encode(startData));
 
         let accumulatedText = '';
+        let toolCallCount = 0;
+        let hasStarted = false;
 
         // 根据 Mastra vNext 文档，处理流式响应
         console.log('🔍 检查 Mastra 流格式:', {
           hasTextStream: !!mastraStream?.textStream,
+          hasStream: !!mastraStream?.stream,
           hasAsyncIterator: mastraStream && typeof mastraStream[Symbol.asyncIterator] === 'function',
           streamType: typeof mastraStream,
           streamKeys: mastraStream ? Object.keys(mastraStream) : []
         });
 
-        // 优先处理 textStream 属性（根据 Mastra 文档）
-        if (mastraStream && mastraStream.textStream && typeof mastraStream.textStream[Symbol.asyncIterator] === 'function') {
+        // 处理 NewAgentNetwork 的流式响应格式
+        if (mastraStream && mastraStream.stream && mastraStream.stream instanceof ReadableStream) {
+          console.log('✅ 处理 NewAgentNetwork 的 ReadableStream');
+
+          const reader = mastraStream.stream.getReader();
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              // StreamEvent 可能包含不同类型的数据
+              let chunkText = '';
+              if (typeof value === 'string') {
+                chunkText = value;
+              } else if (value && typeof value === 'object') {
+                // 处理不同类型的 StreamEvent
+                switch (value.type) {
+                  case 'text':
+                    chunkText = value.data || value.text || '';
+                    break;
+
+                  case 'text-delta':
+                    chunkText = value.textDelta || value.delta || '';
+                    break;
+
+                  case 'tool-call':
+                    // 工具调用开始
+                    toolCallCount++;
+                    if (!hasStarted) {
+                      chunkText = `\n🚀 智能编程助手开始工作...\n\n`;
+                      hasStarted = true;
+                    }
+                    chunkText += `🔧 [${toolCallCount}] 正在调用工具: ${value.toolName || value.name || '未知工具'}\n`;
+                    if (value.args || value.arguments) {
+                      chunkText += `📋 参数: ${JSON.stringify(value.args || value.arguments, null, 2)}\n`;
+                    }
+                    break;
+
+                  case 'tool-call-delta':
+                    // 工具调用过程中的增量更新
+                    if (value.argsTextDelta) {
+                      // 参数构建过程
+                      chunkText = value.argsTextDelta;
+                    } else if (value.toolName && !accumulatedText.includes(`🔧 正在调用工具: ${value.toolName}`)) {
+                      // 首次显示工具名称
+                      chunkText = `\n🔧 正在调用工具: ${value.toolName}\n`;
+                    }
+                    // 其他 delta 事件暂时忽略，避免过多输出
+                    break;
+
+                  case 'tool-result':
+                    // 工具执行结果
+                    chunkText = `\n✅ 工具执行完成\n`;
+                    if (value.result) {
+                      const resultText = typeof value.result === 'string'
+                        ? value.result
+                        : JSON.stringify(value.result, null, 2);
+                      chunkText += `📊 结果: ${resultText}\n\n`;
+                    }
+                    break;
+
+                  case 'start':
+                    if (!hasStarted) {
+                      chunkText = `\n🚀 智能编程助手开始工作...\n\n`;
+                      hasStarted = true;
+                    }
+                    break;
+
+                  case 'step-start':
+                    if (value.payload?.stepName) {
+                      chunkText = `\n🔄 执行步骤: ${value.payload.stepName}\n`;
+                    }
+                    break;
+
+                  case 'step-result':
+                    if (value.payload?.result && typeof value.payload.result === 'string') {
+                      // 如果是文本结果，直接显示
+                      chunkText = value.payload.result;
+                    }
+                    break;
+
+                  case 'step-finish':
+                    if (value.payload?.stepName) {
+                      chunkText = `\n✅ 完成步骤: ${value.payload.stepName}\n`;
+                    }
+                    break;
+
+                  case 'tool-call-streaming-start':
+                    toolCallCount++;
+                    chunkText = `\n🔧 [${toolCallCount}] 正在调用工具: ${value.name || '未知工具'}\n`;
+                    if (value.args) {
+                      chunkText += `📋 参数: ${JSON.stringify(value.args, null, 2)}\n`;
+                    }
+                    break;
+
+                  case 'finish':
+                  case 'done':
+                    chunkText = '\n✨ 处理完成\n';
+                    break;
+
+                  case 'error':
+                    chunkText = `\n❌ 错误: ${value.error || value.message || '未知错误'}\n`;
+                    break;
+
+                  default:
+                    // 处理其他可能的文本内容
+                    if (value.content) {
+                      chunkText = value.content;
+                    } else if (value.text) {
+                      chunkText = value.text;
+                    } else if (value.data && typeof value.data === 'string') {
+                      chunkText = value.data;
+                    }
+                    // 对于无法处理的事件类型，记录但不中断流
+                    if (!chunkText && value.type) {
+                      console.log('📦 收到事件:', value.type, Object.keys(value));
+                    }
+                    break;
+                }
+              }
+
+              if (chunkText) {
+                accumulatedText += chunkText;
+
+                const escapedChunk = chunkText
+                  .replace(/\\/g, '\\\\')  // 转义反斜杠
+                  .replace(/"/g, '\\"')    // 转义双引号
+                  .replace(/\n/g, '\\n')   // 转义换行符
+                  .replace(/\r/g, '\\r')   // 转义回车符
+                  .replace(/\t/g, '\\t');  // 转义制表符
+
+                const chunkData = `0:"${escapedChunk}"\n`;
+                controller.enqueue(encoder.encode(chunkData));
+              }
+            }
+          } finally {
+            reader.releaseLock();
+          }
+        } else if (mastraStream && mastraStream.textStream && typeof mastraStream.textStream[Symbol.asyncIterator] === 'function') {
           console.log('✅ 使用 textStream 属性处理流');
           for await (const chunk of mastraStream.textStream) {
             if (typeof chunk === 'string') {
               accumulatedText += chunk;
 
-              // AI SDK格式：文本块使用 0: 前缀
               const escapedChunk = chunk
-                .replace(/\\/g, '\\\\')  // 转义反斜杠
-                .replace(/"/g, '\\"')    // 转义双引号
-                .replace(/\n/g, '\\n')   // 转义换行符
-                .replace(/\r/g, '\\r')   // 转义回车符
-                .replace(/\t/g, '\\t');  // 转义制表符
+                .replace(/\\/g, '\\\\')
+                .replace(/"/g, '\\"')
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
 
               const chunkData = `0:"${escapedChunk}"\n`;
               controller.enqueue(encoder.encode(chunkData));
@@ -63,22 +202,6 @@ export function convertMastraStreamToAISDK(mastraStream: any) {
               const chunkData = `0:"${escapedChunk}"\n`;
               controller.enqueue(encoder.encode(chunkData));
             }
-          }
-        } else if (mastraStream && mastraStream.objectStream) {
-          console.log('✅ 处理 objectStream');
-          for await (const chunk of mastraStream.objectStream) {
-            const chunkText = typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
-            accumulatedText += chunkText;
-
-            const escapedChunk = chunkText
-              .replace(/\\/g, '\\\\')
-              .replace(/"/g, '\\"')
-              .replace(/\n/g, '\\n')
-              .replace(/\r/g, '\\r')
-              .replace(/\t/g, '\\t');
-
-            const chunkData = `0:"${escapedChunk}"\n`;
-            controller.enqueue(encoder.encode(chunkData));
           }
         } else {
           // 如果不是流，尝试作为单个响应处理
@@ -279,7 +402,7 @@ const ChatRequestSchema = z.object({
   tools: z.array(z.any()).optional(),
 });
 
-export const chatApiRoute = registerApiRoute('apix/chat', {
+export const chatApiRoute = registerApiRoute('/apix/chat', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -380,7 +503,7 @@ export const modelApiRoute = registerApiRoute('/apix/model', {
 });
 
 // Deploy API Route
-export const deployApiRoute = registerApiRoute('apix/deploy', {
+export const deployApiRoute = registerApiRoute('/apix/deploy', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -458,7 +581,7 @@ export const deployApiRoute = registerApiRoute('apix/deploy', {
 });
 
 // Enhanced Prompt API Route
-export const enhancedPromptApiRoute = registerApiRoute('apix/enhancedPrompt', {
+export const enhancedPromptApiRoute = registerApiRoute('/apix/enhancedPrompt', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -787,7 +910,7 @@ function handleStreamingResponse(
 }
 
 // 🚀 新的智能编程专用 API 端点
-export const intelligentCodingApiRoute = registerApiRoute('apix/intelligent-coding', {
+export const intelligentCodingApiRoute = registerApiRoute('/apix/intelligent-coding', {
   method: 'POST',
   handler: async (c) => {
     try {
@@ -824,7 +947,7 @@ export const intelligentCodingApiRoute = registerApiRoute('apix/intelligent-codi
 });
 
 // 🔍 智能编程状态查询 API
-export const intelligentCodingStatusRoute = registerApiRoute('apix/intelligent-coding/status', {
+export const intelligentCodingStatusRoute = registerApiRoute('/apix/intelligent-coding/status', {
   method: 'GET',
   handler: async (c) => {
     try {

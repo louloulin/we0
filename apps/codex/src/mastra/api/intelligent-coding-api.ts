@@ -146,14 +146,22 @@ export async function handleIntelligentCodingMode(
       console.log('🔄 启动流式智能编程处理...');
 
       // 使用 Mastra vNext 的原生流式响应
-      const stream = await intelligentCodingAgentNetwork.stream(enhancedTaskDescription, {
+      const streamResult = await intelligentCodingAgentNetwork.stream(enhancedTaskDescription, {
         runtimeContext,
+      });
+
+      console.log('📡 Mastra vNext Agent Network 流式响应结构:', {
+        hasStream: !!streamResult?.stream,
+        hasGetWorkflowState: !!streamResult?.getWorkflowState,
+        streamKeys: streamResult ? Object.keys(streamResult) : [],
+        streamType: typeof streamResult,
+        streamConstructor: streamResult?.stream?.constructor?.name
       });
 
       // 对于流式响应，我们需要在流结束后进行质量检查
       // 这里先返回原始流，质量检查将在客户端处理
       const { convertMastraStreamToAISDK } = await import('../api-routes');
-      return convertMastraStreamToAISDK(stream);
+      return convertMastraStreamToAISDK(streamResult);
     } else {
       console.log('⚡ 启动非流式智能编程处理...');
 

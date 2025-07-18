@@ -12,6 +12,7 @@ import { eventDrivenWorkflow } from './workflows/event-driven-workflow';
 
 // Import Agent Network (vNext)
 import { codexAgentNetwork } from './networks/codex-agent-network';
+import { intelligentCodingAgentNetwork } from './networks/intelligent-coding-network';
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
 
@@ -20,7 +21,9 @@ import {
   chatApiRoute,
   modelApiRoute,
   deployApiRoute,
-  enhancedPromptApiRoute
+  enhancedPromptApiRoute,
+  intelligentCodingApiRoute,
+  intelligentCodingStatusRoute
 } from './api-routes';
 import { registerApiRoute } from '@mastra/core/server';
 import {
@@ -85,6 +88,7 @@ export const mastra = new Mastra({
   // vNext Agent Networks for intelligent orchestration
   vnext_networks: {
     'codex-agent-network': codexAgentNetwork,
+    'intelligent-coding-network': intelligentCodingAgentNetwork,
   },
 
   // Persistent storage for memory and data
@@ -222,6 +226,10 @@ export const mastra = new Mastra({
       modelApiRoute,
       deployApiRoute,
       enhancedPromptApiRoute,
+
+      // Intelligent Coding API routes
+      intelligentCodingApiRoute,
+      intelligentCodingStatusRoute,
 
       // Agent Network (vNext) API routes
       networkExecuteRoute,
