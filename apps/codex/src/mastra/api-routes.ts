@@ -8,7 +8,7 @@ import { registerApiRoute } from '@mastra/core/server';
 import { z } from 'zod';
 
 // 将Mastra stream转换为AI SDK兼容的stream
-function convertMastraStreamToAISDK(mastraStream: any) {
+export function convertMastraStreamToAISDK(mastraStream: any) {
   const encoder = new TextEncoder();
 
   const readable = new ReadableStream({
@@ -20,21 +20,80 @@ function convertMastraStreamToAISDK(mastraStream: any) {
 
         let accumulatedText = '';
 
-        // 处理Mastra的textStream
-        for await (const chunk of mastraStream.textStream) {
-          accumulatedText += chunk;
+        // 根据 Mastra vNext 文档，处理流式响应
+        console.log('🔍 检查 Mastra 流格式:', {
+          hasTextStream: !!mastraStream?.textStream,
+          hasAsyncIterator: mastraStream && typeof mastraStream[Symbol.asyncIterator] === 'function',
+          streamType: typeof mastraStream,
+          streamKeys: mastraStream ? Object.keys(mastraStream) : []
+        });
 
-          // AI SDK格式：文本块使用 0: 前缀
-          // 正确转义 XML 标签和特殊字符
-          const escapedChunk = chunk
-            .replace(/\\/g, '\\\\')  // 转义反斜杠
-            .replace(/"/g, '\\"')    // 转义双引号
-            .replace(/\n/g, '\\n')   // 转义换行符
-            .replace(/\r/g, '\\r')   // 转义回车符
-            .replace(/\t/g, '\\t');  // 转义制表符
+        // 优先处理 textStream 属性（根据 Mastra 文档）
+        if (mastraStream && mastraStream.textStream && typeof mastraStream.textStream[Symbol.asyncIterator] === 'function') {
+          console.log('✅ 使用 textStream 属性处理流');
+          for await (const chunk of mastraStream.textStream) {
+            if (typeof chunk === 'string') {
+              accumulatedText += chunk;
 
-          const chunkData = `0:"${escapedChunk}"\n`;
-          controller.enqueue(encoder.encode(chunkData));
+              // AI SDK格式：文本块使用 0: 前缀
+              const escapedChunk = chunk
+                .replace(/\\/g, '\\\\')  // 转义反斜杠
+                .replace(/"/g, '\\"')    // 转义双引号
+                .replace(/\n/g, '\\n')   // 转义换行符
+                .replace(/\r/g, '\\r')   // 转义回车符
+                .replace(/\t/g, '\\t');  // 转义制表符
+
+              const chunkData = `0:"${escapedChunk}"\n`;
+              controller.enqueue(encoder.encode(chunkData));
+            }
+          }
+        } else if (mastraStream && typeof mastraStream[Symbol.asyncIterator] === 'function') {
+          console.log('✅ 直接迭代 Mastra 流对象');
+          for await (const chunk of mastraStream) {
+            if (typeof chunk === 'string') {
+              accumulatedText += chunk;
+
+              const escapedChunk = chunk
+                .replace(/\\/g, '\\\\')
+                .replace(/"/g, '\\"')
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t');
+
+              const chunkData = `0:"${escapedChunk}"\n`;
+              controller.enqueue(encoder.encode(chunkData));
+            }
+          }
+        } else if (mastraStream && mastraStream.objectStream) {
+          console.log('✅ 处理 objectStream');
+          for await (const chunk of mastraStream.objectStream) {
+            const chunkText = typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
+            accumulatedText += chunkText;
+
+            const escapedChunk = chunkText
+              .replace(/\\/g, '\\\\')
+              .replace(/"/g, '\\"')
+              .replace(/\n/g, '\\n')
+              .replace(/\r/g, '\\r')
+              .replace(/\t/g, '\\t');
+
+            const chunkData = `0:"${escapedChunk}"\n`;
+            controller.enqueue(encoder.encode(chunkData));
+          }
+        } else {
+          // 如果不是流，尝试作为单个响应处理
+          console.warn('⚠️ Mastra stream format not recognized, treating as single response');
+          const content = mastraStream?.result || mastraStream?.text || String(mastraStream || '');
+
+          const escapedContent = content
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
+
+          const contentData = `0:"${escapedContent}"\n`;
+          controller.enqueue(encoder.encode(contentData));
         }
 
         // 发送完成标记
@@ -241,7 +300,18 @@ export const chatApiRoute = registerApiRoute('apix/chat', {
       if (mode === 'chat') {
         return await handleChatMode(messages, model, userId, tools, isStreaming, c);
       } else {
-        return await handleBuilderMode(messages, model, userId, otherConfig, tools, isStreaming, c);
+        // 🚀 使用新的智能编程模式处理器
+        const useIntelligentCoding = c.req.header('X-Use-Intelligent-Coding') === 'true' ||
+                                   c.req.query('intelligent') === 'true' ||
+                                   true; // 默认启用智能编程模式
+
+        if (useIntelligentCoding) {
+          const { handleIntelligentCodingMode } = await import('./api/intelligent-coding-api');
+          return await handleIntelligentCodingMode(messages, model, userId, otherConfig, tools, isStreaming, c);
+        } else {
+          // 保留原有的 Builder 模式作为备选
+          return await handleBuilderMode(messages, model, userId, otherConfig, tools, isStreaming, c);
+        }
       }
 
     } catch (error) {
@@ -715,3 +785,63 @@ function handleStreamingResponse(
 
   return new Response(stream);
 }
+
+// 🚀 新的智能编程专用 API 端点
+export const intelligentCodingApiRoute = registerApiRoute('apix/intelligent-coding', {
+  method: 'POST',
+  handler: async (c) => {
+    try {
+      const body = await c.req.json();
+      const validatedRequest = ChatRequestSchema.parse(body);
+
+      const { messages, model, otherConfig, tools } = validatedRequest;
+      const userId = c.req.header('userId') || null;
+
+      // 强制使用流式响应以获得最佳体验
+      const isStreaming = true;
+
+      console.log('🚀 智能编程 API 调用:', {
+        messageCount: messages.length,
+        model,
+        userId,
+        hasOtherConfig: !!otherConfig,
+        toolsCount: tools?.length || 0
+      });
+
+      // 使用智能编程处理器
+      const { handleIntelligentCodingMode } = await import('./api/intelligent-coding-api');
+      return await handleIntelligentCodingMode(messages, model, userId, otherConfig, tools, isStreaming, c);
+
+    } catch (error) {
+      console.error('❌ 智能编程 API 错误:', error);
+      return c.json({
+        error: '智能编程处理失败',
+        details: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      }, 500);
+    }
+  },
+});
+
+// 🔍 智能编程状态查询 API
+export const intelligentCodingStatusRoute = registerApiRoute('apix/intelligent-coding/status', {
+  method: 'GET',
+  handler: async (c) => {
+    try {
+      const { getIntelligentCodingStatus } = await import('./api/intelligent-coding-api');
+      const status = getIntelligentCodingStatus();
+
+      return c.json({
+        ...status,
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+      });
+    } catch (error) {
+      console.error('智能编程状态查询错误:', error);
+      return c.json({
+        error: '状态查询失败',
+        details: error instanceof Error ? error.message : String(error)
+      }, 500);
+    }
+  },
+});
