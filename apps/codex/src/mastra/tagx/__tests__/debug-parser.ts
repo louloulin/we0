@@ -5,9 +5,11 @@
  */
 
 import { TagXParser } from '../parser';
+import { SimpleTagXParser } from '../simple-parser';
 import { XMLParser } from 'fast-xml-parser';
 
 const parser = new TagXParser();
+const simpleParser = new SimpleTagXParser();
 
 // 创建一个原始XML解析器来查看原始结果
 const rawParser = new XMLParser({
@@ -58,23 +60,20 @@ console.log('原始XML解析结果:');
 const rawResult = rawParser.parse(smartCodeGenXML);
 console.log(JSON.stringify(rawResult, null, 2));
 
-console.log('\nTagX解析结果:');
+console.log('\n简化TagX解析结果:');
+try {
+  const elements = simpleParser.parse(smartCodeGenXML);
+  console.log('简化解析结果:', JSON.stringify(elements, null, 2));
+} catch (error) {
+  console.error('简化解析失败:', error);
+}
+
+console.log('\n原TagX解析结果:');
 try {
   const elements = parser.parse(smartCodeGenXML);
-  console.log('解析结果:', JSON.stringify(elements, null, 2));
-
-  // 调试文件提取
-  console.log('\n调试文件提取:');
-  const smartCodeGenData = rawResult.smart_code_gen;
-  console.log('existing_files:', smartCodeGenData.context.existing_files);
-  console.log('file array:', smartCodeGenData.context.existing_files.file);
-
-  // 调试审查者提取
-  console.log('\n调试审查者提取:');
-  console.log('reviewers:', smartCodeGenData.agents.reviewers);
-  console.log('agent array:', smartCodeGenData.agents.reviewers.agent);
+  console.log('原解析结果:', JSON.stringify(elements, null, 2));
 } catch (error) {
-  console.error('解析失败:', error);
+  console.error('原解析失败:', error);
 }
 
 // 测试bolt_artifact解析

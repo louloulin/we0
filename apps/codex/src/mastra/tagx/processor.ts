@@ -6,8 +6,8 @@
 
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
-import { TagXParser } from './parser';
-import { TagXExecutor } from './executor';
+import { SimpleTagXParser } from './simple-parser';
+import { CompleteTagXExecutor } from './complete-executor';
 import { TagXContext, TagXResult, TagXElement } from './types';
 
 /**
@@ -30,8 +30,8 @@ export interface TagXProcessorConfig {
  * 4. 错误处理和恢复
  */
 export class TagXProcessor {
-  private parser: TagXParser;
-  private executor: TagXExecutor;
+  private parser: SimpleTagXParser;
+  private executor: CompleteTagXExecutor;
   private memory: Memory;
   private config: TagXProcessorConfig;
 
@@ -44,16 +44,13 @@ export class TagXProcessor {
     };
 
     // 初始化组件
-    this.parser = new TagXParser();
+    this.parser = new SimpleTagXParser();
     this.memory = new Memory({
       storage: new LibSQLStore({
         url: this.config.databaseUrl!
       })
     });
-    this.executor = new TagXExecutor(
-      require('../networks/intelligent-coding-network').intelligentCodingAgentNetwork,
-      this.memory
-    );
+    this.executor = new CompleteTagXExecutor(this.memory);
   }
 
   /**

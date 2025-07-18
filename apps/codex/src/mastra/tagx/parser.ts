@@ -213,7 +213,9 @@ export class TagXParser {
       task: this.getTextContent(data.task) || 'Unknown task',
       context: {
         project_type: this.getTextContent(data.context?.project_type) || 'unknown',
-        existing_files: extractFiles(data.context?.existing_files),
+        existing_files: Array.isArray(data.context?.existing_files?.file) ?
+          data.context.existing_files.file :
+          (data.context?.existing_files?.file ? [data.context.existing_files.file] : []),
         requirements: {
           security: this.getTextContent(data.context?.requirements?.security) || 'medium',
           accessibility: this.getTextContent(data.context?.requirements?.accessibility) || 'basic',
@@ -222,7 +224,9 @@ export class TagXParser {
       },
       agents: {
         primary: this.getTextContent(data.agents?.primary) || 'senior-developer',
-        reviewers: extractReviewers(data.agents?.reviewers)
+        reviewers: Array.isArray(data.agents?.reviewers?.agent) ?
+          data.agents.reviewers.agent :
+          (data.agents?.reviewers?.agent ? [data.agents.reviewers.agent] : [])
       },
       output: {
         include_tests: this.getTextContent(data.output?.include_tests) === 'true',
