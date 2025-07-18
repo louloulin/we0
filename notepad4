@@ -1,58 +1,52 @@
-基于当前的智能编程助手项目，执行以下具体的分析、实现和验证任务：
+请按照以下详细步骤实现基于Mastra的智能编程助手功能：
 
-### 1. 深度代码分析和技术研究
-- **MetaGPT 架构分析**：
-  - 使用 `view` 工具分析 `/Users/louloulin/Documents/linchong/code/we0/MetaGPT/metagpt/roles/` 目录下的核心角色实现
-  - 重点分析 `product_manager.py`, `architect.py`, `engineer.py` 等文件的角色定义模式
-  - 研究 `/Users/louloulin/Documents/linchong/code/we0/MetaGPT/metagpt/environment/` 下的多智能体协作环境
-  - 分析消息传递机制和工作流编排的具体实现代码
+## 任务目标
+基于Mastra.ai官方文档和现有计划，实现TagX指令体系中的核心功能，并完成完整的开发-测试-验证流程。
 
-- **Mastra 技术文档研究**：
-  - 使用 `web-search` 和 `web-fetch` 工具获取 https://mastra.ai/docs 的最新文档
-  - 重点研究 Mastra vNext Agent Network 的 API 使用方法
-  - 学习 `@mastra/client-js` 的集成方式和最佳实践
-  - 分析 Memory 系统、RuntimeContext 配置和工具集成的具体实现
+## 具体执行步骤
 
-- **现有项目状态分析**：
-  - 分析 `/Users/louloulin/Documents/linchong/code/we0/apps/codex` 的当前 Mastra 智能体实现
-  - 分析 `/Users/louloulin/Documents/linchong/code/we0/apps/we-dev-client` 的前端架构和 API 调用方式
-  - 识别两个项目之间的集成点和兼容性
+### 1. 研究和分析阶段
+- 深入研究 https://mastra.ai/en/docs 官方文档，重点关注：
+  - Agent Network架构和多智能体协作
+  - 工具调用系统和MCP协议集成
+  - 内存管理和上下文处理
+  - 流式响应和错误处理机制
+- 分析plan6.md中当前的实施优先级和里程碑要求
+- 理解tagx.md中定义的XML指令标签体系和语法规范
 
-### 2. 按照 plan6.md 实施具体功能
-根据 `/Users/louloulin/Documents/linchong/code/we0/plan6.md` 中的实施计划，按优先级顺序实现：
+### 2. 功能实现阶段
+按照plan6.md中的优先级顺序实现功能：
 
-**Phase 1: Mastra Client 集成 (立即开始)**
-- 在 we-dev-client 中安装和配置 `@mastra/client-js`
-- 创建 `IntelligentCodingClient` 类替换现有的 API 调用
-- 实现流式响应处理和错误管理机制
+智能体在/Users/louloulin/Documents/linchong/code/we0/apps/codex实现，ui在/Users/louloulin/Documents/linchong/code/we0/apps/we-dev-client实现
+- **P0优先级**：实现TagX指令解析系统、智能代码生成(`<smart_code_gen>`)、增强boltArtifact(`<bolt_artifact>`)
+- **P1优先级**：实现多智能体工作流(`<agent_workflow>`)、质量检查系统(`<quality_check>`)
+- 每个功能都要：
+  - 严格按照tagx.md中定义的XML标签格式实现
+  - 集成Mastra的Agent Network和工具调用能力
+  - 保持与现有we-dev-client前端的兼容性
 
-**Phase 2: MetaGPT 界面重构**
-- 基于 MetaGPT 角色模式重构 AiChat 组件
-- 实现多智能体状态可视化界面
-- 添加工作流进度显示和智能体协作动画
+### 3. 测试验证阶段
+为每个实现的功能创建全面的测试：
+- **单元测试**：测试各个TagX标签的解析和执行
+- **集成测试**：测试多智能体协作和工作流编排
+- **端到端测试**：测试完整的用户使用场景
+- **性能测试**：验证响应时间和资源使用
+- 确保所有测试通过后才进入下一个功能开发
 
-**Phase 3: 代码编辑器 AI 增强**
-- 集成 Mastra Client 到 CodeMirror 编辑器
-- 实现智能代码补全和实时建议
-- 添加项目级上下文分析功能
+### 4. 文档更新阶段
+功能验证通过后，更新plan6.md：
+- 在相应的TODO项目前添加 ✅ 标记
+- 更新里程碑完成状态
+- 记录实现过程中的关键技术决策和经验教训
+- 更新优先级矩阵中的完成状态
 
-### 3. 测试验证和质量保证
-对每个实现的功能进行全面测试：
-- **功能测试**：验证 Mastra Client 集成是否正常工作
-- **性能测试**：测试流式响应的延迟和稳定性
-- **用户体验测试**：验证 MetaGPT 界面的可用性和直观性
-- **集成测试**：确保 codex 后端和 we-dev-client 前端的完整协作
+## 输出要求
+- 所有代码注释和文档说明使用中文
+- 提供详细的实现说明和技术架构文档
+- 包含完整的测试报告和性能指标
+- 更新后的plan6.md要清晰标示已完成和待完成的功能
 
-### 4. 文档更新和进度跟踪
-- 在 plan6.md 中标记已完成的功能（使用 ✅ 标记）
-- 记录实现过程中遇到的问题和解决方案
-- 更新技术架构图和 API 文档
-- 添加性能基准测试结果
-
-### 5. 输出要求
-- 提供具体的代码实现和配置文件
-- 包含详细的测试结果和验证报告
-- 更新后的 plan6.md 文件，清晰标记实现进度
-- 下一阶段的具体行动建议
-
-请按照这个顺序逐步执行，每完成一个阶段就进行测试验证，确保质量后再进入下一阶段。
+## 质量标准
+- 代码质量：遵循TypeScript最佳实践，代码覆盖率≥80%
+- 性能要求：TagX指令解析时间<100ms，智能体响应时间<5s
+- 兼容性：与现有we-dev-client和codex系统完全兼容

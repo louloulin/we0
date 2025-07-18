@@ -34,6 +34,7 @@
     "@mastra/mcp-docs-server": "^0.13.5",
     "@mastra/memory": "^0.11.3",
     "@mastra/rag": "^1.0.3",
+    "fast-xml-parser": "^4.3.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {

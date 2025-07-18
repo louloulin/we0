@@ -57,6 +57,13 @@ import {
   generateIdTool,
 } from '../tools/utility-functions-tool';
 
+// 导入TagX工具集
+import {
+  defaultTagXTool,
+  defaultSmartCodeGenTool,
+  defaultBoltArtifactTool,
+} from '../tagx/tools';
+
 /**
  * 创建智能编程 Agent Network 的内存系统
  */
@@ -198,6 +205,11 @@ export const intelligentCodingAgentNetwork = new NewAgentNetwork({
     detectLanguageTool,
     generateIdTool,
     validateJsonSchemaTool,
+
+    // TagX工具集 - 下一代智能编程助手指令体系
+    tagx_processor: defaultTagXTool,
+    smart_code_gen: defaultSmartCodeGenTool,
+    bolt_artifact: defaultBoltArtifactTool,
   },
   
   memory: createIntelligentCodingMemory(),
