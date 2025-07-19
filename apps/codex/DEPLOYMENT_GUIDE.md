@@ -1,6 +1,8 @@
-# Workflow System Deployment Guide
+# 智能编程助手部署指南 (Phase 4 完整版)
 
-## 🚀 Quick Start
+基于 Mastra vNext Agent Network 的智能编程助手系统，实现了类似 Cursor/Augment Code 的专业级编程体验。
+
+## 🚀 快速部署 (Phase 4)
 
 ### 1. Environment Setup
 
@@ -259,5 +261,79 @@ tail -f logs/server.log  # If using file logging
 
 ---
 
-**Ready for Production**: ✅  
-**Next Steps**: Configure API keys → Deploy → Monitor
+## 🚀 Phase 4: 生产部署和优化 (新增)
+
+### 部署管理器
+
+使用内置的部署管理器进行一键部署：
+
+```bash
+# 执行完整部署流程
+npm run deploy
+
+# 检查部署状态
+npm run deploy:status
+
+# 执行健康检查
+npm run deploy:health
+```
+
+### 监控系统
+
+访问 `http://localhost:9090` 查看实时监控面板：
+
+- 系统健康状态
+- Agent Network 性能指标
+- 任务执行统计
+- 错误率和响应时间
+- 质量评分趋势
+
+### 成功指标验证
+
+系统自动跟踪以下指标：
+
+- ✅ **代码生成完整率**: 目标 95%
+- ✅ **多文件项目成功率**: 目标 90%
+- ✅ **boltArtifact 格式正确率**: 目标 99%
+- ✅ **代码质量评分**: 目标 85+
+
+### 数据库迁移
+
+```bash
+# 自动执行迁移
+npm run migrate
+
+# 检查迁移状态
+npm run migrate:status
+
+# 回滚到指定版本
+npm run migrate:rollback <version>
+```
+
+### 环境配置增强
+
+新增环境变量：
+
+```bash
+# Agent Network 配置
+AGENT_MEMORY_URL=postgresql://user:password@localhost:5432/agent_memory
+AGENT_MAX_CONCURRENT_TASKS=10
+AGENT_TASK_TIMEOUT_MS=60000
+
+# 监控配置
+ENABLE_METRICS=true
+ENABLE_LOGGING=true
+LOG_LEVEL=info
+METRICS_PORT=9090
+
+# 性能配置
+ENABLE_CACHING=true
+CACHE_MAX_SIZE=100
+ENABLE_COMPRESSION=true
+```
+
+---
+
+**Phase 4 完成**: ✅
+**生产就绪**: ✅
+**下一步**: 配置 API 密钥 → 部署 → 监控 → 优化
