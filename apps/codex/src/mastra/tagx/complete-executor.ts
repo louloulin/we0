@@ -107,26 +107,18 @@ export class CompleteTagXExecutor {
       
       try {
         let result: TagXResult;
-        
-        switch (element.tagName) {
-          case 'smart_code_gen':
-            result = await this.executeSmartCodeGen(element as SmartCodeGenElement, context);
-            break;
-          case 'bolt_artifact':
-            result = await this.executeBoltArtifact(element as BoltArtifactElement, context);
-            break;
-          case 'agent_workflow':
-            result = await this.executeAgentWorkflow(element as AgentWorkflowElement, context);
-            break;
-          default:
-            result = {
-              success: false,
-              tagName: element.tagName,
-              duration: Date.now() - startTime,
-              output: null,
-              error: `不支持的TagX标签: ${element.tagName}`
-            };
-        }
+
+        // 添加超时处理，默认5秒超时
+        const timeout = context.timeout || 5000;
+        const executePromise = this.executeElement(element, context);
+
+        const timeoutPromise = new Promise<TagXResult>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`执行超时: ${element.tagName} 执行时间超过 ${timeout}ms`));
+          }, timeout);
+        });
+
+        result = await Promise.race([executePromise, timeoutPromise]);
 
         result.duration = Date.now() - startTime;
         results.push(result);
@@ -148,6 +140,25 @@ export class CompleteTagXExecutor {
     }
 
     return results;
+  }
+
+  private async executeElement(element: TagXElement, context: TagXContext): Promise<TagXResult> {
+    switch (element.tagName) {
+      case 'smart_code_gen':
+        return await this.executeSmartCodeGen(element as SmartCodeGenElement, context);
+      case 'bolt_artifact':
+        return await this.executeBoltArtifact(element as BoltArtifactElement, context);
+      case 'agent_workflow':
+        return await this.executeAgentWorkflow(element as AgentWorkflowElement, context);
+      default:
+        return {
+          success: false,
+          tagName: element.tagName,
+          duration: 0,
+          output: null,
+          error: `不支持的TagX标签: ${element.tagName}`
+        };
+    }
   }
 
   /**

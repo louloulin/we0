@@ -178,14 +178,15 @@ export class TagXParser {
     const extractFiles = (filesData: any): string[] => {
       if (!filesData) return [];
       if (Array.isArray(filesData)) {
-        return filesData.map(f => this.getTextContent(f));
+        return filesData.map(f => this.getTextContent(f)).filter(f => f);
       }
       if (filesData.file) {
         const files = filesData.file;
         if (Array.isArray(files)) {
-          return files.filter(f => f).map(f => String(f));
+          return files.filter(f => f).map(f => typeof f === 'string' ? f : this.getTextContent(f));
         } else {
-          return [String(files)];
+          const content = typeof files === 'string' ? files : this.getTextContent(files);
+          return content ? [content] : [];
         }
       }
       return [];
@@ -195,27 +196,26 @@ export class TagXParser {
     const extractReviewers = (reviewersData: any): string[] => {
       if (!reviewersData) return [];
       if (Array.isArray(reviewersData)) {
-        return reviewersData.map(r => this.getTextContent(r));
+        return reviewersData.map(r => this.getTextContent(r)).filter(r => r);
       }
       if (reviewersData.agent) {
         const agents = reviewersData.agent;
         if (Array.isArray(agents)) {
-          return agents.filter(a => a).map(a => String(a));
+          return agents.filter(a => a).map(a => typeof a === 'string' ? a : this.getTextContent(a));
         } else {
-          return [String(agents)];
+          const content = typeof agents === 'string' ? agents : this.getTextContent(agents);
+          return content ? [content] : [];
         }
       }
       return [];
     };
 
-    // 使用Zod验证数据结构
-    const validated = SmartCodeGenSchema.parse({
+    // 构建验证数据，确保所有字段都是正确的类型
+    const validationData = {
       task: this.getTextContent(data.task) || 'Unknown task',
       context: {
         project_type: this.getTextContent(data.context?.project_type) || 'unknown',
-        existing_files: Array.isArray(data.context?.existing_files?.file) ?
-          data.context.existing_files.file :
-          (data.context?.existing_files?.file ? [data.context.existing_files.file] : []),
+        existing_files: extractFiles(data.context?.existing_files),
         requirements: {
           security: this.getTextContent(data.context?.requirements?.security) || 'medium',
           accessibility: this.getTextContent(data.context?.requirements?.accessibility) || 'basic',
@@ -224,16 +224,17 @@ export class TagXParser {
       },
       agents: {
         primary: this.getTextContent(data.agents?.primary) || 'senior-developer',
-        reviewers: Array.isArray(data.agents?.reviewers?.agent) ?
-          data.agents.reviewers.agent :
-          (data.agents?.reviewers?.agent ? [data.agents.reviewers.agent] : [])
+        reviewers: extractReviewers(data.agents?.reviewers)
       },
       output: {
         include_tests: this.getTextContent(data.output?.include_tests) === 'true',
         include_docs: this.getTextContent(data.output?.include_docs) === 'true',
         include_types: this.getTextContent(data.output?.include_types) === 'true'
       }
-    });
+    };
+
+    // 使用Zod验证数据结构
+    const validated = SmartCodeGenSchema.parse(validationData);
 
     return {
       tagName: 'smart_code_gen',
@@ -254,7 +255,7 @@ export class TagXParser {
       id: this.getAttributeValue(data, 'id', 'unknown'),
       title: this.getAttributeValue(data, 'title', 'Untitled'),
       meta: {
-        version: this.getTextContent(data.meta?.version) || '1.0',
+        version: String(this.getTextContent(data.meta?.version) || '1.0'),
         agent: this.getTextContent(data.meta?.agent) || 'code-generator',
         quality_score: parseFloat(this.getTextContent(data.meta?.quality_score) || '0.8')
       },
@@ -306,15 +307,15 @@ export class TagXParser {
     const validated = AgentWorkflowSchema.parse({
       task: this.getTextContent(data.task) || 'Unknown task',
       workflow: this.ensureArray(data.workflow?.stage || []).map((stage: any) => ({
-        name: this.getAttributeValue(stage, 'name') || this.getTextContent(stage.name),
-        agent: this.getAttributeValue(stage, 'agent') || this.getTextContent(stage.agent),
-        depends_on: this.getAttributeValue(stage, 'depends_on') || this.getTextContent(stage.depends_on),
-        input: this.getTextContent(stage.input),
-        output: this.getTextContent(stage.output),
+        name: this.getAttributeValue(stage, 'name') || this.getTextContent(stage.name) || '',
+        agent: this.getAttributeValue(stage, 'agent') || this.getTextContent(stage.agent) || '',
+        depends_on: this.getAttributeValue(stage, 'depends_on') || this.getTextContent(stage.depends_on) || '',
+        input: this.getTextContent(stage.input) || '',
+        output: this.getTextContent(stage.output) || this.getTextContent(stage.o) || '',
         duration: this.getTextContent(stage.duration) || '30min',
         parallel: stage.parallel ? this.ensureArray(stage.parallel.subtask || []).map((subtask: any) => ({
-          agent: this.getAttributeValue(subtask, 'agent') || this.getTextContent(subtask.agent),
-          description: this.getTextContent(subtask) || this.getTextContent(subtask.description)
+          agent: this.getAttributeValue(subtask, 'agent') || this.getTextContent(subtask.agent) || '',
+          description: this.getTextContent(subtask) || this.getTextContent(subtask.description) || ''
         })) : undefined
       })),
       quality_gates: this.ensureArray(data.quality_gates?.gate || []).map((gate: any) => ({
@@ -332,11 +333,48 @@ export class TagXParser {
   }
 
   /**
-   * 解析其他TagX标签的占位符方法
+   * 解析quality_check标签
    */
   private parseQualityCheck(value: any): QualityCheckElement {
-    // TODO: 实现quality_check解析逻辑
-    throw new Error('quality_check标签解析尚未实现');
+    const data = this.normalizeXMLData(value);
+
+    return {
+      tagName: 'quality_check',
+      attributes: this.extractAttributes(value),
+      children: [],
+      scope: {
+        files: {
+          pattern: this.getTextContent(data.scope?.files?.pattern) || '**/*.{ts,tsx,js,jsx}',
+          exclude: this.getTextContent(data.scope?.files?.exclude)
+        }
+      },
+      checks: {
+        static_analysis: {
+          tool: this.ensureArray(data.checks?.static_analysis?.tool || ['eslint']).map(t => this.getTextContent(t)),
+          custom_rules: this.getTextContent(data.checks?.static_analysis?.custom_rules)
+        },
+        security: {
+          tool: this.ensureArray(data.checks?.security?.tool || ['semgrep']).map(t => this.getTextContent(t)),
+          custom_rules: this.getTextContent(data.checks?.security?.custom_rules)
+        },
+        performance: {
+          bundle_analysis: this.getTextContent(data.checks?.performance?.bundle_analysis) === 'true',
+          memory_leaks: this.getTextContent(data.checks?.performance?.memory_leaks) === 'true',
+          async_patterns: this.getTextContent(data.checks?.performance?.async_patterns) === 'true'
+        },
+        accessibility: data.checks?.accessibility ? {
+          tool: this.getTextContent(data.checks.accessibility.tool) || 'axe-core',
+          standard: this.getTextContent(data.checks.accessibility.standard) || 'wcag-aa'
+        } : undefined
+      },
+      thresholds: {
+        code_coverage: this.getTextContent(data.thresholds?.code_coverage) || '80%',
+        security_score: this.getTextContent(data.thresholds?.security_score) || '8.0',
+        performance_score: this.getTextContent(data.thresholds?.performance_score) || '90',
+        maintainability_index: parseFloat(this.getTextContent(data.thresholds?.maintainability_index) || '70')
+      },
+      agent: this.getTextContent(data.agent) || 'quality-assurance'
+    };
   }
 
   private parseSmartRefactor(value: any): SmartRefactorElement {

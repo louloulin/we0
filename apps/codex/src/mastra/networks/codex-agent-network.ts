@@ -54,6 +54,7 @@ import {
   validateFilesTool, 
   summarizeFilesTool 
 } from '../tools/file-processing-tool';
+import { integratedTagXTool } from '../tagx/integrated-system';
 
 /**
  * Create memory instance for Agent Network
@@ -117,6 +118,13 @@ Your capabilities include:
 - Monitor systems and respond to events automatically
 - Coordinate between different agents and tools
 
+**TagX Intelligent Programming Assistant:**
+- Process TagX XML instructions for intelligent code generation
+- Support smart_code_gen, bolt_artifact, agent_workflow, quality_check tags
+- Multi-agent collaboration with quality assurance
+- Intelligent routing between standard and enhanced processors
+- Real-time quality analysis and improvement suggestions
+
 **File & Content Processing:**
 - Parse boltArtifact tags and extract file content
 - Process messages and analyze project structures
@@ -160,6 +168,7 @@ Provide clear, actionable responses with proper context and explanations.
     parseArtifactTool,
     generateMySQLPromptTool,
     jsonToZodTool,
+    integratedTagXTool,
   },
 
   // Memory for context-aware routing

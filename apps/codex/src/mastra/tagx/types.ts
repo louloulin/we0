@@ -337,6 +337,7 @@ export interface TagXContext {
   sessionId: string;
   preferences: UserPreferences;
   history: TagXExecutionHistory[];
+  timeout?: number; // 执行超时时间（毫秒）
 }
 
 export interface UserPreferences {

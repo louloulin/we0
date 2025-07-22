@@ -182,6 +182,11 @@ export class MastraTagXParser {
       const closeTags = (xmlString.match(/<\/[^>]*>/g) || []).length;
       const selfClosingTags = (xmlString.match(/<[^/!][^>]*\/>/g) || []).length;
 
+      // 检查明显的XML格式错误
+      if (xmlString.includes('<') && !xmlString.includes('>')) {
+        throw new Error('TagX解析失败: XML格式错误，标签未正确闭合');
+      }
+
       // 开放标签数量应该等于关闭标签数量加上自闭合标签数量
       if (openTags !== closeTags + selfClosingTags) {
         // 对于复杂的XML，跳过这个简单验证

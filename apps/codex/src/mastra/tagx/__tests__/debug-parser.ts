@@ -19,8 +19,6 @@ const rawParser = new XMLParser({
   parseAttributeValue: true,
   parseTagValue: true,
   trimValues: true,
-  parseTrueNumberOnly: false,
-  arrayMode: false,
   alwaysCreateTextNode: false,
 });
 
@@ -158,3 +156,24 @@ try {
 } catch (error) {
   console.error('解析失败:', error);
 }
+
+// 添加基本测试用例以满足Jest要求
+describe('Debug Parser', () => {
+  it('应该能够解析smart_code_gen XML', () => {
+    const elements = simpleParser.parse(smartCodeGenXML);
+    expect(elements).toBeDefined();
+    expect(elements.length).toBeGreaterThan(0);
+  });
+
+  it('应该能够解析bolt_artifact XML', () => {
+    const elements = parser.parse(boltArtifactXML);
+    expect(elements).toBeDefined();
+    expect(elements.length).toBeGreaterThan(0);
+  });
+
+  it('应该能够解析agent_workflow XML', () => {
+    const elements = parser.parse(agentWorkflowXML);
+    expect(elements).toBeDefined();
+    expect(elements.length).toBeGreaterThan(0);
+  });
+});
