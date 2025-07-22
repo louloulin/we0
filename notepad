@@ -1,4 +1,1 @@
-
-
-@/Users/louloulin/Documents/linchong/code/we0/plan4.md 按照计划实现，分析/Users/louloulin/Documents/linchong/code/we0/MetaGPT的相关实现，
-搜索 https://mastra.ai/en/docs资料，使用mastra特性实现相关的功能，参考augementcode的设计，完善功能，完成功能后增加测试验证，验证通过后更新 @/Users/louloulin/Documents/linchong/code/we0/plan4.md 标记实现的功能
+搜索 https://mastra.ai/en/docs资料，使用mastra特性实现相关的功能，参考augementcode的设计，按照 @/Users/louloulin/Documents/linchong/code/we0/plan7.md 计划，完善功能，完成功能后增加测试验证，验证通过后更新 @/Users/louloulin/Documents/linchong/code/we0/plan7.md 标记实现的功能，同时充分借鉴 @/Users/louloulin/Documents/linchong/code/we0/arch.md  @/Users/louloulin/Documents/linchong/code/we0/architecture-diagrams.md 智能体架构和mastra结合，使用中文说明
