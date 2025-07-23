@@ -40,6 +40,9 @@ import { nanoid } from 'nanoid';
 // 真实模型配置 - 统一管理所有可用的真实模型
 import { deepseekChat, deepseekCoder, deepseekV3, deepseekR1, DEEPSEEK_CONFIG } from '../models/deepseek';
 
+// 性能优化器 - 提升响应速度和系统性能
+import { globalResponseOptimizer } from '../performance/response-optimizer';
+
 /**
  * 真实可用模型配置
  * 根据环境变量和 API 密钥可用性动态选择最佳模型
@@ -698,10 +701,59 @@ function shouldUseBinaryFeedback(context: ExecutionContext): boolean {
 }
 
 /**
+ * 创建性能优化的智能体包装器
+ * 集成响应优化、缓存、重试机制
+ */
+const createOptimizedAgent = (baseAgent: any, agentName: string) => {
+  return {
+    ...baseAgent,
+    async generate(prompt: string, context: any = {}) {
+      console.log(`🚀 [${agentName}] 开始优化生成...`);
+
+      try {
+        // 使用性能优化器进行生成
+        const result = await globalResponseOptimizer.optimizedGenerate(
+          baseAgent,
+          prompt,
+          context,
+          {
+            enableCache: true,
+            timeout: 30000
+          }
+        );
+
+        // 记录性能指标
+        if (result.responseTime < 500) {
+          console.log(`⚡ [${agentName}] 快速响应: ${result.responseTime}ms`);
+        } else if (result.responseTime < 2000) {
+          console.log(`✅ [${agentName}] 正常响应: ${result.responseTime}ms`);
+        } else {
+          console.log(`⚠️ [${agentName}] 慢速响应: ${result.responseTime}ms`);
+        }
+
+        return result;
+      } catch (error) {
+        console.error(`❌ [${agentName}] 生成失败:`, error);
+
+        // 尝试智能重试
+        console.log(`🔄 [${agentName}] 启动智能重试...`);
+        return await globalResponseOptimizer.retryOptimizedGenerate(
+          baseAgent,
+          prompt,
+          context,
+          { maxRetries: 2, backoffMs: 1000 }
+        );
+      }
+    }
+  };
+};
+
+/**
  * 创建思维增强的 DeepSeek 智能体
  * 基于 claudecode.md 中的 ThinkingEnabledMastraAgent 规范
+ * 集成性能优化功能
  */
-const thinkingEnhancedDeepSeekAgent = new ThinkingEnabledAgent({
+const baseThinkingEnhancedDeepSeekAgent = new ThinkingEnabledAgent({
   name: 'Claude Code DeepSeek Agent',
   description: '基于 DeepSeek 模型的思维增强智能编程助手',
   instructions: `
@@ -743,6 +795,12 @@ const thinkingEnhancedDeepSeekAgent = new ThinkingEnabledAgent({
     codeCommentTool
   }
 });
+
+// 创建性能优化版本的智能体
+const thinkingEnhancedDeepSeekAgent = createOptimizedAgent(
+  baseThinkingEnhancedDeepSeekAgent,
+  'ThinkingEnhancedDeepSeek'
+);
 
 /**
  * 创建架构设计专家智能体
