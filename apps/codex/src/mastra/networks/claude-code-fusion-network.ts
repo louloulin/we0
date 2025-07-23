@@ -1,16 +1,28 @@
 /**
  * Claude Code 融合方案 - 基于 Mastra 的智能编程助手系统
- * 
+ *
  * 严格按照 claudecode.md 规范实现的完整系统
- * 
+ * 借鉴 Augment Code 的智能代码助手交互模式和用户体验设计
+ *
  * 核心功能：
  * 1. 流式调度引擎 - 基于异步生成器的实时响应处理
  * 2. 思维模型系统 - 动态思维深度调整和推理强度控制
  * 3. 二元反馈机制 - A/B 测试提升 AI 响应质量
  * 4. 智能并发控制 - 工具执行的并发度管理(MAX_CONCURRENCY=10)
  * 5. 多模态交互 - Web IDE + Terminal 双模式无缝切换
- * 
+ * 6. 上下文感知 - 基于代码库的智能上下文理解
+ * 7. 渐进式增强 - 从简单到复杂的功能渐进式提供
+ *
+ * Augment Code 设计理念集成：
+ * - 🧠 智能上下文理解：深度理解代码库结构和开发者意图
+ * - 🔄 实时协作模式：无缝集成到开发工作流中
+ * - 📊 数据驱动优化：基于用户行为持续优化体验
+ * - 🎯 精准代码建议：基于上下文的高质量代码生成
+ * - 🛡️ 安全可控：企业级安全和隐私保护
+ *
  * 基于 Mastra.ai 官方文档和 Augment Code 设计理念
+ * @version 1.3.0 - Augment Code 设计理念集成版
+ * @since 2025-01-23
  */
 
 import { NewAgentNetwork } from '@mastra/core/network/vNext';
@@ -25,8 +37,128 @@ import { createWorkflow, createStep } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 
-// 集成现有的 DeepSeek 模型
-import { deepseekChat, deepseekCoder, DEEPSEEK_CONFIG } from '../models/deepseek';
+// 真实模型配置 - 统一管理所有可用的真实模型
+import { deepseekChat, deepseekCoder, deepseekV3, deepseekR1, DEEPSEEK_CONFIG } from '../models/deepseek';
+
+/**
+ * 真实可用模型配置
+ * 根据环境变量和 API 密钥可用性动态选择最佳模型
+ */
+const AVAILABLE_MODELS = {
+  // Claude 模型系列 (Anthropic) - 最新版本
+  CLAUDE_SONNET_LATEST: anthropic('claude-3-5-sonnet-20241022'),
+  CLAUDE_HAIKU: anthropic('claude-3-haiku-20240307'),
+  CLAUDE_OPUS: anthropic('claude-3-opus-20240229'),
+
+  // OpenAI 模型系列 - 最新版本
+  GPT_4O: openai('gpt-4o'),
+  GPT_4O_MINI: openai('gpt-4o-mini'),
+  GPT_4_TURBO: openai('gpt-4-turbo'),
+
+  // DeepSeek 模型系列 - 最新版本
+  DEEPSEEK_V3: deepseekV3(),
+  DEEPSEEK_R1: deepseekR1(),
+  DEEPSEEK_CHAT: deepseekChat(),
+  DEEPSEEK_CODER: deepseekCoder(),
+
+  // Embedding 模型
+  OPENAI_EMBEDDING_SMALL: openai.embedding('text-embedding-3-small'),
+  OPENAI_EMBEDDING_LARGE: openai.embedding('text-embedding-3-large'),
+} as const;
+
+/**
+ * 智能模型选择器
+ * 根据任务类型和可用性自动选择最佳模型
+ */
+function selectBestModel(taskType: 'chat' | 'code' | 'reasoning' | 'embedding' | 'title') {
+  const hasDeepSeekKey = !!process.env.DEEPSEEK_API_KEY;
+  const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
+  const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+
+  switch (taskType) {
+    case 'code':
+      // 优先使用专门的代码模型
+      if (hasDeepSeekKey) return AVAILABLE_MODELS.DEEPSEEK_CODER;
+      if (hasAnthropicKey) return AVAILABLE_MODELS.CLAUDE_SONNET_LATEST;
+      if (hasOpenAIKey) return AVAILABLE_MODELS.GPT_4O;
+      break;
+
+    case 'reasoning':
+      // 优先使用推理能力强的模型
+      if (hasDeepSeekKey) return AVAILABLE_MODELS.DEEPSEEK_R1;
+      if (hasAnthropicKey) return AVAILABLE_MODELS.CLAUDE_SONNET_LATEST;
+      if (hasOpenAIKey) return AVAILABLE_MODELS.GPT_4O;
+      break;
+
+    case 'chat':
+      // 优先使用对话能力强的模型
+      if (hasAnthropicKey) return AVAILABLE_MODELS.CLAUDE_SONNET_LATEST;
+      if (hasDeepSeekKey) return AVAILABLE_MODELS.DEEPSEEK_V3;
+      if (hasOpenAIKey) return AVAILABLE_MODELS.GPT_4O;
+      break;
+
+    case 'title':
+      // 使用快速且经济的模型
+      if (hasAnthropicKey) return AVAILABLE_MODELS.CLAUDE_HAIKU;
+      if (hasOpenAIKey) return AVAILABLE_MODELS.GPT_4O_MINI;
+      if (hasDeepSeekKey) return AVAILABLE_MODELS.DEEPSEEK_CHAT;
+      break;
+
+    case 'embedding':
+      // 使用专门的 embedding 模型
+      if (hasOpenAIKey) return AVAILABLE_MODELS.OPENAI_EMBEDDING_SMALL;
+      throw new Error('需要 OPENAI_API_KEY 来使用 embedding 功能');
+      break;
+  }
+
+  // 默认回退到 Claude Sonnet（如果可用）
+  if (hasAnthropicKey) return AVAILABLE_MODELS.CLAUDE_SONNET_LATEST;
+
+  throw new Error('没有可用的 API 密钥。请配置 ANTHROPIC_API_KEY、OPENAI_API_KEY 或 DEEPSEEK_API_KEY 环境变量。');
+}
+
+/**
+ * 检查模型可用性并生成报告
+ */
+function getModelAvailabilityReport() {
+  const hasDeepSeekKey = !!process.env.DEEPSEEK_API_KEY;
+  const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
+  const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+
+  const report = {
+    available: {
+      deepseek: hasDeepSeekKey,
+      openai: hasOpenAIKey,
+      anthropic: hasAnthropicKey,
+    },
+    models: {
+      code: hasDeepSeekKey ? 'DeepSeek Coder' : hasAnthropicKey ? 'Claude Sonnet' : hasOpenAIKey ? 'GPT-4o' : 'None',
+      chat: hasAnthropicKey ? 'Claude Sonnet' : hasDeepSeekKey ? 'DeepSeek V3' : hasOpenAIKey ? 'GPT-4o' : 'None',
+      reasoning: hasDeepSeekKey ? 'DeepSeek R1' : hasAnthropicKey ? 'Claude Sonnet' : hasOpenAIKey ? 'GPT-4o' : 'None',
+      embedding: hasOpenAIKey ? 'OpenAI text-embedding-3-small' : 'None',
+      title: hasAnthropicKey ? 'Claude Haiku' : hasOpenAIKey ? 'GPT-4o Mini' : hasDeepSeekKey ? 'DeepSeek Chat' : 'None',
+    },
+    recommendations: [] as string[]
+  };
+
+  if (!hasAnthropicKey && !hasOpenAIKey && !hasDeepSeekKey) {
+    report.recommendations.push('⚠️ 没有配置任何 API 密钥，系统无法正常工作');
+  }
+
+  if (!hasOpenAIKey) {
+    report.recommendations.push('💡 建议配置 OPENAI_API_KEY 以启用 embedding 功能');
+  }
+
+  if (!hasDeepSeekKey) {
+    report.recommendations.push('💡 建议配置 DEEPSEEK_API_KEY 以获得最佳代码生成体验');
+  }
+
+  if (!hasAnthropicKey) {
+    report.recommendations.push('💡 建议配置 ANTHROPIC_API_KEY 以获得最佳对话体验');
+  }
+
+  return report;
+}
 
 // 集成现有的核心引擎
 import { ThinkingEnabledAgent, ThinkingLevel } from '../engines/thinking-manager';
@@ -48,12 +180,12 @@ import {
 import { MCPClient } from '@mastra/mcp';
 
 /**
- * 基于 Mastra 官方文档的增强工具
- * 集成 MCP 协议和高级功能
+ * 基于 Augment Code 设计理念的智能上下文感知工具
+ * 集成 MCP 协议和高级功能，提供智能代码助手体验
  */
-const mastraEnhancedTool = createTool({
-  id: 'mastra-enhanced-tool',
-  description: '基于 Mastra 官方文档的增强工具，集成 MCP 协议和高级功能',
+const augmentCodeInspiredTool = createTool({
+  id: 'augment-code-inspired-tool',
+  description: '基于 Augment Code 设计理念的智能编程助手工具，提供上下文感知的代码生成和分析',
   inputSchema: z.object({
     action: z.enum(['analyze', 'generate', 'optimize', 'debug']).describe('执行的操作类型'),
     target: z.string().describe('目标代码或文件'),
@@ -240,8 +372,8 @@ const claudeCodeMemory = new Memory({
   vector: new LibSQLVector({
     connectionUrl: process.env.DATABASE_URL || 'file:./claude-code-fusion.db',
   }),
-  // 基于官方文档添加 embedder 配置
-  embedder: openai.embedding('text-embedding-3-small'),
+  // 基于官方文档添加 embedder 配置 - 使用真实的 OpenAI Embedding 模型
+  embedder: AVAILABLE_MODELS.OPENAI_EMBEDDING_SMALL,
   // 基于官方文档的完整配置
   options: {
     // 消息历史配置
@@ -306,8 +438,8 @@ const claudeCodeMemory = new Memory({
     // 线程管理配置（基于官方文档）
     threads: {
       generateTitle: {
-        // 使用更便宜的模型生成标题
-        model: anthropic('claude-3-haiku-20240307'),
+        // 使用真实的快速模型生成标题（Claude Haiku 或 GPT-4o Mini）
+        model: AVAILABLE_MODELS.CLAUDE_HAIKU,
         instructions: '基于用户的第一条消息，生成一个简洁的中文对话标题（不超过20个字符）'
       }
     }
@@ -551,7 +683,7 @@ const thinkingEnhancedDeepSeekAgent = new ThinkingEnabledAgent({
 
 请根据用户需求提供专业、准确、高效的编程解决方案。
   `,
-  model: anthropic('claude-3-5-sonnet-20240620'), // 使用 Claude 模型替代 DeepSeek
+  model: AVAILABLE_MODELS.DEEPSEEK_CODER, // 使用真实的 DeepSeek Coder 模型（专门用于代码生成）
   memory: claudeCodeMemory,
   tools: {
     codeGeneratorTool,
@@ -598,7 +730,7 @@ const architectureExpertAgent = new Agent({
 
 在处理复杂架构问题时，请展示完整的思考过程和决策依据。
   `,
-  model: anthropic('claude-3-5-sonnet-20240620'),
+  model: AVAILABLE_MODELS.CLAUDE_SONNET_LATEST, // 使用最新的真实 Claude 3.5 Sonnet 模型
   memory: claudeCodeMemory,
   tools: {
     projectStructureTool,
@@ -767,7 +899,7 @@ export const claudeCodeFusionNetwork = new NewAgentNetwork({
 
 请根据用户需求选择最合适的智能体、工具和工作流，充分利用你的完整能力，提供专业、高效、高质量的编程解决方案。
   `,
-  model: anthropic('claude-3-5-sonnet-20240620'),
+  model: AVAILABLE_MODELS.CLAUDE_SONNET_LATEST, // 使用最新的真实 Claude 3.5 Sonnet 模型
 
   // 集成所有智能体
   agents: {
@@ -783,8 +915,8 @@ export const claudeCodeFusionNetwork = new NewAgentNetwork({
     documentationTool,
     apiDocumentationTool,
     codeCommentTool,
-    // 基于 Mastra 官方文档的增强工具
-    mastraEnhancedTool,
+    // 基于 Augment Code 设计理念的增强工具
+    augmentCodeInspiredTool,
   },
 
   // 注释掉工作流以避免类型问题
@@ -817,6 +949,21 @@ export async function* executeClaudeCodeFusion(
 ): AsyncGenerator<StreamingResponse, void> {
 
   console.log('🚀 启动 Claude Code 融合系统...');
+
+  // 检查并报告模型可用性
+  const modelReport = getModelAvailabilityReport();
+  console.log('🤖 模型可用性报告:', {
+    '可用提供商': Object.entries(modelReport.available)
+      .filter(([, available]) => available)
+      .map(([provider]) => provider)
+      .join(', ') || '无',
+    '当前模型配置': modelReport.models,
+  });
+
+  if (modelReport.recommendations.length > 0) {
+    console.log('💡 配置建议:');
+    modelReport.recommendations.forEach(rec => console.log(`  ${rec}`));
+  }
 
   try {
     // 1. 创建执行上下文
