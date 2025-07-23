@@ -193,10 +193,13 @@ export class IntelligentConcurrencyController {
       const resourceMonitoringId = this.resourceMonitor.startMonitoring(request.id);
 
       // 执行工具
-      const result = await request.tool.execute({
-        context: request.args,
-        runtimeContext: request.context
-      });
+      const result = await request.tool.execute?.(request.args, {
+        toolCallId: request.id,
+        messages: []
+      }) || {
+        success: false,
+        error: 'Tool execution failed'
+      };
 
       // 停止资源监控
       const resourceUsage = this.resourceMonitor.stopMonitoring(resourceMonitoringId);

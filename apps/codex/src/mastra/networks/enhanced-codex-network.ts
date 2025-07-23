@@ -1,50 +1,26 @@
 /**
- * 增强的 Codex Agent Network - 集成所有核心功能
- * 
+ * 增强的 Codex Agent Network - 基于 Mastra vNext 的完整智能编程助手
+ *
  * 核心功能：
- * 1. 流式调度引擎集成
- * 2. 思维模型系统集成
- * 3. 二元反馈机制集成
- * 4. 智能并发控制集成
- * 5. MCP 工具集成
- * 
- * 基于现有 Codex Agent Network，增强为下一代智能编程助手
+ * 1. 基于 NewAgentNetwork 的智能体网络
+ * 2. 完整的 MCP 协议支持
+ * 3. 持久化内存系统
+ * 4. 流式响应处理
+ * 5. 工具生态集成
+ *
+ * 严格按照 Mastra.ai 官方文档实现，参考 Augment Code 设计理念
  */
 
 import { NewAgentNetwork } from '@mastra/core/network/vNext';
+import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 import { anthropic } from '@ai-sdk/anthropic';
+import { openai } from '@ai-sdk/openai';
 import { RuntimeContext } from '@mastra/core/runtime-context';
-
-// 导入现有的智能体和工具
-import { deepseekAgent, deepseekCoderAgent } from '../agents/deepseek-agent';
-import { 
-  codeGeneratorTool,
-  documentationTool,
-  codebaseSearchTool 
-} from '../tools';
-
-// 导入新的引擎
-import { 
-  mastraStreamingScheduler,
-  StreamingResponse,
-  ExecutionContext 
-} from '../engines/streaming-scheduler';
-import { 
-  ThinkingEnabledAgent,
-  ThinkingLevel,
-  thinkTool 
-} from '../engines/thinking-manager';
-import { 
-  BinaryFeedbackManager,
-  binaryFeedbackTool 
-} from '../engines/binary-feedback';
-import { 
-  globalConcurrencyController,
-  executeToolConcurrently,
-  TaskPriority 
-} from '../engines/concurrency-controller';
+import { MCPClient } from '@mastra/mcp';
+import { createTool } from '@mastra/core/tools';
+import { z } from 'zod';
 
 // 增强的执行选项
 export interface EnhancedExecutionOptions {
