@@ -361,19 +361,45 @@ export interface ExecutionContext {
 }
 
 /**
- * 创建增强的内存系统（基于 Mastra 官方文档优化）
- * 集成 Working Memory、Semantic Recall 和 Thread Management
+ * 创建测试友好的内存系统
+ * 根据环境自动选择在线或离线模式
  */
-const claudeCodeMemory = new Memory({
-  storage: new LibSQLStore({
-    url: process.env.DATABASE_URL || 'file:./claude-code-fusion.db',
-  }),
-  // 基于官方文档启用向量存储
-  vector: new LibSQLVector({
-    connectionUrl: process.env.DATABASE_URL || 'file:./claude-code-fusion.db',
-  }),
-  // 基于官方文档添加 embedder 配置 - 使用真实的 OpenAI Embedding 模型
-  embedder: AVAILABLE_MODELS.OPENAI_EMBEDDING_SMALL,
+const createClaudeCodeMemory = () => {
+  const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
+  const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
+
+  if (isTestEnvironment || !hasOpenAIKey) {
+    // 测试环境或无 API 密钥时使用简化配置
+    console.log('🧪 使用测试模式内存系统（无 embedding）');
+    return new Memory({
+      storage: new LibSQLStore({
+        url: 'file:./test-claude-code-fusion.db',
+      }),
+      // 测试模式下不使用向量存储和 embedding
+      options: {
+        lastMessages: 10,
+        workingMemory: {
+          enabled: true,
+          scope: 'resource',
+          template: '# 测试模式用户档案\n- 测试用户\n- 测试项目'
+        },
+        threads: {
+          generateTitle: false // 测试模式下不生成标题
+        }
+      }
+    });
+  }
+
+  // 生产环境使用完整配置
+  console.log('🚀 使用生产模式内存系统（完整功能）');
+  return new Memory({
+    storage: new LibSQLStore({
+      url: process.env.DATABASE_URL || 'file:./claude-code-fusion.db',
+    }),
+    vector: new LibSQLVector({
+      connectionUrl: process.env.DATABASE_URL || 'file:./claude-code-fusion.db',
+    }),
+    embedder: AVAILABLE_MODELS.OPENAI_EMBEDDING_SMALL,
   // 基于官方文档的完整配置
   options: {
     // 消息历史配置
@@ -444,7 +470,11 @@ const claudeCodeMemory = new Memory({
       }
     }
   }
-});
+  });
+};
+
+// 创建内存实例
+const claudeCodeMemory = createClaudeCodeMemory();
 
 /**
  * Claude Code 流式调度器

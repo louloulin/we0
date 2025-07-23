@@ -42,29 +42,13 @@ export const deepseek = createOpenAICompatible({
   },
 });
 
-// Available DeepSeek models
+// Available DeepSeek models (verified from API: 2025-01-23)
 export const DEEPSEEK_MODELS = {
-  // DeepSeek Chat models
+  // DeepSeek Chat - 通用对话和代码生成，支持多种编程任务
   CHAT: 'deepseek-chat',
-  CODER: 'deepseek-coder',
 
-  // DeepSeek Reasoning models
+  // DeepSeek Reasoner - 复杂推理和深度分析，适合架构设计等任务
   REASONER: 'deepseek-reasoner',
-
-  // DeepSeek R1 models (latest reasoning models)
-  R1: 'deepseek-r1',
-  R1_DISTILL_LLAMA_70B: 'deepseek-r1-distill-llama-70b',
-  R1_DISTILL_QWEN_32B: 'deepseek-r1-distill-qwen-32b',
-  R1_DISTILL_QWEN_14B: 'deepseek-r1-distill-qwen-14b',
-  R1_DISTILL_QWEN_7B: 'deepseek-r1-distill-qwen-7b',
-  R1_DISTILL_QWEN_1_5B: 'deepseek-r1-distill-qwen-1.5b',
-
-  // Specific model versions (if needed)
-  CHAT_V2: 'deepseek-chat-v2',
-  CODER_V2: 'deepseek-coder-v2',
-
-  // DeepSeek V3 models (latest generation)
-  V3: 'deepseek-v3',
 } as const;
 
 // Helper function to create DeepSeek model instances
@@ -72,19 +56,14 @@ export const createDeepSeekModel = (model: string = DEEPSEEK_MODELS.CHAT) => {
   return deepseek(model);
 };
 
-// Convenience exports for common models
+// 主要模型导出
 export const deepseekChat = () => createDeepSeekModel(DEEPSEEK_MODELS.CHAT);
-export const deepseekCoder = () => createDeepSeekModel(DEEPSEEK_MODELS.CODER);
 export const deepseekReasoner = () => createDeepSeekModel(DEEPSEEK_MODELS.REASONER);
-export const deepseekR1 = () => createDeepSeekModel(DEEPSEEK_MODELS.R1);
-export const deepseekV3 = () => createDeepSeekModel(DEEPSEEK_MODELS.V3);
 
-// Convenience exports for R1 distilled models
-export const deepseekR1Llama70B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_LLAMA_70B);
-export const deepseekR1Qwen32B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_32B);
-export const deepseekR1Qwen14B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_14B);
-export const deepseekR1Qwen7B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_7B);
-export const deepseekR1Qwen1_5B = () => createDeepSeekModel(DEEPSEEK_MODELS.R1_DISTILL_QWEN_1_5B);
+// 向后兼容的别名导出
+export const deepseekCoder = () => createDeepSeekModel(DEEPSEEK_MODELS.CHAT); // 代码生成使用 chat 模型
+export const deepseekR1 = () => createDeepSeekModel(DEEPSEEK_MODELS.REASONER); // R1 推理使用 reasoner 模型
+export const deepseekV3 = () => createDeepSeekModel(DEEPSEEK_MODELS.CHAT); // V3 功能通过 chat 模型提供
 
 /**
  * Model-specific configurations with parameter support
@@ -115,7 +94,7 @@ export const createDeepSeekChatModel = (options: DeepSeekModelOptions = {}) => {
 };
 
 export const createDeepSeekCoderModel = (options: DeepSeekModelOptions = {}) => {
-  const model = createDeepSeekModel(DEEPSEEK_MODELS.CODER);
+  const model = createDeepSeekModel(DEEPSEEK_MODELS.CHAT); // 使用 chat 模型进行代码生成
 
   // Apply configuration options if provided
   if (Object.keys(options).length > 0) {
@@ -132,21 +111,10 @@ export const createDeepSeekCoderModel = (options: DeepSeekModelOptions = {}) => 
  * capabilities and recommended settings for optimal performance.
  */
 export const DEEPSEEK_CONFIG = {
-  // Maximum context length for different models
+  // Maximum context length for available models (verified from API)
   maxTokens: {
     [DEEPSEEK_MODELS.CHAT]: 32768,      // DeepSeek Chat supports 32K context
-    [DEEPSEEK_MODELS.CODER]: 16384,     // DeepSeek Coder supports 16K context
     [DEEPSEEK_MODELS.REASONER]: 64000,  // DeepSeek Reasoner supports 64K context
-    [DEEPSEEK_MODELS.R1]: 128000,       // DeepSeek R1 supports 128K context
-    [DEEPSEEK_MODELS.V3]: 128000,       // DeepSeek V3 supports 128K context
-    [DEEPSEEK_MODELS.CHAT_V2]: 32768,   // V2 models maintain same context
-    [DEEPSEEK_MODELS.CODER_V2]: 16384,
-    // R1 distilled models have varying context lengths
-    [DEEPSEEK_MODELS.R1_DISTILL_LLAMA_70B]: 32768,
-    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_32B]: 32768,
-    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_14B]: 32768,
-    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_7B]: 32768,
-    [DEEPSEEK_MODELS.R1_DISTILL_QWEN_1_5B]: 32768,
   },
 
   // Recommended default parameters for optimal performance
@@ -168,37 +136,24 @@ export const DEEPSEEK_CONFIG = {
     systemMessages: true,   // Supports system messages
   },
 
-  // Recommended use cases for each model
+  // Recommended use cases for available models
   useCases: {
     [DEEPSEEK_MODELS.CHAT]: [
       'General conversation',
-      'Question answering',
+      'Code generation and review',
       'Creative writing',
-      'Analysis and reasoning'
-    ],
-    [DEEPSEEK_MODELS.CODER]: [
-      'Code generation',
-      'Code review and analysis',
+      'Technical documentation',
       'Debugging assistance',
-      'Technical documentation'
+      'Algorithm explanation',
+      'Question answering'
     ],
     [DEEPSEEK_MODELS.REASONER]: [
       'Complex reasoning tasks',
       'Mathematical problem solving',
-      'Logical analysis',
-      'Multi-step reasoning'
-    ],
-    [DEEPSEEK_MODELS.R1]: [
-      'Advanced reasoning',
+      'Advanced logical analysis',
+      'Multi-step reasoning',
       'Research assistance',
-      'Complex problem solving',
       'Chain-of-thought reasoning'
-    ],
-    [DEEPSEEK_MODELS.V3]: [
-      'Latest generation tasks',
-      'High-performance reasoning',
-      'Advanced code generation',
-      'Complex analysis'
     ],
   },
 } as const;
