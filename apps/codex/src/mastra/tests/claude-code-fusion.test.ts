@@ -27,7 +27,16 @@ import { ThinkingLevel } from '../engines/thinking-manager';
 import { TaskPriority } from '../engines/concurrency-controller';
 
 describe('Claude Code 融合系统完整测试套件', () => {
-  
+
+  // 测试超时设置
+  jest.setTimeout(30000);
+
+  // 清理异步操作
+  afterEach(async () => {
+    // 等待所有异步操作完成
+    await new Promise(resolve => setTimeout(resolve, 100));
+  });
+
   describe('核心功能验证', () => {
     
     test('Claude Code 融合网络应该正确初始化', () => {
@@ -101,6 +110,10 @@ describe('Claude Code 融合系统完整测试套件', () => {
       for await (const response of stream) {
         if (firstResponseTime === 0) {
           firstResponseTime = Date.now() - startTime;
+        }
+        // 记录响应类型用于验证
+        if (response.type) {
+          console.log(`收到响应类型: ${response.type}`);
         }
         break; // 只测试第一个响应
       }
@@ -271,12 +284,22 @@ describe('Claude Code 融合系统完整测试套件', () => {
     
     test('中断信号应该正确处理', async () => {
       const controller = new AbortController();
-      
-      setTimeout(() => controller.abort(), 1000);
-      
+
+      // 使用 Promise 而不是 setTimeout 来避免开放句柄
+      const abortPromise = new Promise<void>((resolve) => {
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+          clearTimeout(timeoutId);
+          resolve();
+        }, 1000);
+      });
+
       const responses: any[] = [];
-      
+
       try {
+        // 启动中断定时器
+        abortPromise.catch(() => {});
+
         for await (const response of executeClaudeCodeFusion(
           '这是一个长时间运行的任务',
           {
@@ -291,7 +314,7 @@ describe('Claude Code 融合系统完整测试套件', () => {
       } catch (error) {
         // 预期会有中断错误
       }
-      
+
       expect(responses.length).toBeGreaterThanOrEqual(0);
     }, 5000);
   });

@@ -370,19 +370,24 @@ export class IntelligentConcurrencyController {
    * 启动性能监控
    */
   private startPerformanceMonitoring(): void {
+    // 在测试环境中不启动定时器，避免 Jest 开放句柄警告
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
+      return;
+    }
+
     setInterval(() => {
       const stats = this.getExecutionStats();
-      
+
       if (stats.currentConcurrency > 0 || stats.queueLength > 0) {
         console.log(`📊 并发状态: ${stats.currentConcurrency}/${this.MAX_CONCURRENCY} 活跃, ${stats.queueLength} 队列中`);
       }
-      
+
       // 检查资源利用率
       const utilization = stats.resourceUtilization;
       if (utilization.cpu > 0.8 || utilization.memory > 0.8) {
         console.warn(`⚠️ 资源利用率较高: CPU ${(utilization.cpu * 100).toFixed(1)}%, 内存 ${(utilization.memory * 100).toFixed(1)}%`);
       }
-      
+
     }, 10000); // 每10秒检查一次
   }
 }
