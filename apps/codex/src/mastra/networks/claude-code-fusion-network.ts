@@ -361,37 +361,56 @@ export interface ExecutionContext {
 }
 
 /**
- * 创建测试友好的内存系统
- * 根据环境自动选择在线或离线模式
+ * 创建增强的内存系统 (基于 Mastra.ai 官方文档 v0.10.15+)
+ * 集成 Working Memory、Semantic Recall 和 Thread Management
  */
 const createClaudeCodeMemory = () => {
   const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID;
   const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 
   if (isTestEnvironment || !hasOpenAIKey) {
-    // 测试环境或无 API 密钥时使用简化配置
-    console.log('🧪 使用测试模式内存系统（无 embedding）');
+    // 测试环境：简化配置但保持核心功能
+    console.log('🧪 使用测试模式内存系统（简化配置）');
     return new Memory({
       storage: new LibSQLStore({
         url: 'file:./test-claude-code-fusion.db',
       }),
-      // 测试模式下不使用向量存储和 embedding
       options: {
         lastMessages: 10,
+        // 基于官方文档的 Working Memory 配置
         workingMemory: {
           enabled: true,
-          scope: 'resource',
-          template: '# 测试模式用户档案\n- 测试用户\n- 测试项目'
+          scope: 'resource', // 跨会话持久化用户档案
+          template: `# Claude Code 智能编程助手 - 测试用户档案
+
+## 👤 基本信息
+- **用户类型**: 测试用户
+- **测试场景**: [单元测试/集成测试/性能测试]
+- **当前任务**: [代码生成/架构设计/问题解决]
+
+## 🔧 测试配置
+- **模型偏好**: DeepSeek Coder (测试模式)
+- **响应模式**: [快速/详细/思维模式]
+- **并发级别**: 1 (测试环境)
+
+## 📝 测试记录
+- **测试开始时间**:
+- **关键测试点**:
+- **预期结果**:
+`
         },
+        // 测试模式下禁用标题生成以提高测试速度
         threads: {
-          generateTitle: false // 测试模式下不生成标题
-        }
+          generateTitle: false
+        },
+        // 禁用语义召回以简化测试
+        semanticRecall: false
       }
     });
   }
 
-  // 生产环境使用完整配置
-  console.log('🚀 使用生产模式内存系统（完整功能）');
+  // 生产环境：完整的企业级内存系统
+  console.log('🚀 使用生产模式内存系统（企业级功能）');
   return new Memory({
     storage: new LibSQLStore({
       url: process.env.DATABASE_URL || 'file:./claude-code-fusion.db',
