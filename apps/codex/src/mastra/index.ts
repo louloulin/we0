@@ -2,6 +2,9 @@
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
+import { Memory } from '@mastra/memory';
+
+// Import enhanced workflows
 import { weatherWorkflow } from './workflows/weather-workflow';
 import { deepseekCodeGenerationWorkflow } from './workflows/deepseek-workflow';
 import { builderWorkflow } from './workflows/builder-workflow';
@@ -10,11 +13,44 @@ import { apiOptimizationWorkflow } from './workflows/api-optimization-workflow';
 import { approvalWorkflow } from './workflows/approval-workflow';
 import { eventDrivenWorkflow } from './workflows/event-driven-workflow';
 
-// Import Agent Network (vNext)
+// Import enhanced Agent Networks (vNext)
 import { codexAgentNetwork } from './networks/codex-agent-network';
 import { intelligentCodingAgentNetwork } from './networks/intelligent-coding-network';
+
+// Import enhanced agents
 import { weatherAgent } from './agents/weather-agent';
 import { deepseekAgent, deepseekCoderAgent } from './agents/deepseek-agent';
+import {
+  requirementsAnalystAgent,
+  systemArchitectAgent,
+  seniorDeveloperAgent,
+  codeReviewerAgent,
+  documentationSpecialistAgent
+} from './agents/professional-agents';
+
+// Import enhanced tools from anon-kode migration
+import {
+  enhancedFileReadTool,
+  enhancedFileWriteTool,
+  enhancedFileEditTool,
+  enhancedBashTool,
+  enhancedGrepTool,
+  enhancedGlobTool,
+  enhancedLsTool
+} from './tools/enhanced-file-tools';
+
+import {
+  mcpClientTool,
+  mcpToolCallTool,
+  mcpRegistryTool
+} from './tools/enhanced-mcp-tools';
+
+import {
+  memoryReadTool,
+  memoryWriteTool,
+  memorySearchTool,
+  memoryManageTool
+} from './tools/enhanced-memory-tools';
 
 // Import API routes
 import {
@@ -83,7 +119,16 @@ export const mastra = new Mastra({
     weatherAgent,
     deepseekAgent,
     deepseekCoderAgent,
+    // Enhanced professional agents
+    requirementsAnalystAgent,
+    systemArchitectAgent,
+    seniorDeveloperAgent,
+    codeReviewerAgent,
+    documentationSpecialistAgent,
   },
+
+  // Note: Enhanced tools are now integrated with agents
+  // Tools from anon-kode migration are available through the agent networks
 
   // vNext Agent Networks for intelligent orchestration
   vnext_networks: {
